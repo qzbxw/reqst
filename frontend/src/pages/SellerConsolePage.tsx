@@ -11,7 +11,6 @@ import {
   fetchMe,
   fetchWallets,
   getStoredToken,
-  markInvoicePaid,
   setStoredToken,
 } from "../lib/api";
 import type { Invoice, MeResponse, Network, Wallet } from "../lib/types";
@@ -41,7 +40,7 @@ type PanelKey = "overview" | "wallets" | "create" | "orders";
 const COPY = {
   ru: {
     eyebrow: "Reqst",
-    heroTitle: "reqst",
+    heroTitle: "Консоль продавца",
     heroCopy:
       "Инвойсы, статусы и оплата в одном месте. Без ручной сверки, лишних вкладок и хаоса в блокчейн-эксплорерах.",
     tabs: {
@@ -97,7 +96,7 @@ const COPY = {
     matchingUsdt: "USDT / USDC: точная сумма с уникальным хвостом",
     matchingLate: "Опоздавшая оплата уходит на ручную проверку",
     ordersTitle: "Инвойсы",
-    ordersCopy: "Здесь можно быстро открыть ссылку, скопировать её и закрыть нестандартные случаи вручную.",
+    ordersCopy: "Здесь можно быстро открыть ссылку, скопировать её и следить за статусами без ручного самоаппрува.",
     emptyOrders: "Инвойсов пока нет.",
     publicId: "Public ID",
     expires: "Истекает",
@@ -106,10 +105,22 @@ const COPY = {
     copyLink: "Ссылка",
     cancel: "Отменить",
     markPaid: "Подтвердить",
+    quickActions: "Быстрые действия",
+    accountTitle: "Профиль",
+    accountCopy: "Кто принимает оплату и сколько ещё доступно в плане.",
+    invoicePulseTitle: "Пульс инвойсов",
+    invoicePulseCopy: "Какие статусы требуют внимания прямо сейчас.",
+    walletCoverageTitle: "Покрытие сетей",
+    walletCoverageCopy: "Сразу видно, какие направления уже готовы к оплате.",
+    sellerIdLabel: "Seller ID",
+    defaultNetwork: "Сеть по умолчанию",
+    walletReady: "Готово",
+    walletMissing: "Нужно добавить",
+    latestCheckout: "Последний чекаут",
   },
   en: {
     eyebrow: "Reqst",
-    heroTitle: "reqst",
+    heroTitle: "Seller console",
     heroCopy:
       "Invoices, payment status and checkout in one place. No manual matching, no extra tabs, no explorer chaos.",
     tabs: {
@@ -165,7 +176,7 @@ const COPY = {
     matchingUsdt: "USDT / USDC: exact amount with a unique suffix",
     matchingLate: "Late payments move to manual review",
     ordersTitle: "Invoices",
-    ordersCopy: "Open links quickly, copy them, and resolve edge cases without digging through the page.",
+    ordersCopy: "Open links quickly, copy them, and track statuses without self-confirming payments from the same console.",
     emptyOrders: "No invoices yet.",
     publicId: "Public ID",
     expires: "Expires",
@@ -174,6 +185,18 @@ const COPY = {
     copyLink: "Link",
     cancel: "Cancel",
     markPaid: "Mark paid",
+    quickActions: "Quick actions",
+    accountTitle: "Profile",
+    accountCopy: "Who receives payments and how much room is left in the plan.",
+    invoicePulseTitle: "Invoice pulse",
+    invoicePulseCopy: "The states that need attention right now.",
+    walletCoverageTitle: "Network coverage",
+    walletCoverageCopy: "See at a glance which payout lanes are ready to receive funds.",
+    sellerIdLabel: "Seller ID",
+    defaultNetwork: "Default network",
+    walletReady: "Ready",
+    walletMissing: "Needs wallet",
+    latestCheckout: "Latest checkout",
   },
 } as const;
 
@@ -366,16 +389,12 @@ export function SellerConsolePage() {
     }
   }
 
-  async function handleInvoiceAction(invoiceId: number, action: "cancel" | "mark-paid") {
+  async function handleInvoiceAction(invoiceId: number, action: "cancel") {
     if (!session) {
       return;
     }
     try {
-      if (action === "cancel") {
-        await cancelInvoice(session.token, invoiceId);
-      } else {
-        await markInvoicePaid(session.token, invoiceId);
-      }
+      await cancelInvoice(session.token, invoiceId);
       await refresh();
     } catch (err) {
       setError((err as Error).message);
@@ -395,6 +414,28 @@ export function SellerConsolePage() {
   const sellerHandle = session ? `@${session.me.seller.username || String(session.me.seller.telegram_id)}` : "";
   const heroLink = freshLink || (latestInvoice ? `${checkoutOrigin}/checkout/${latestInvoice.public_id}` : "");
   const heroLinkLabel = freshLink ? text.freshLink : text.recentInvoice;
+  const invoicePulse = useMemo(() => {
+    if (!session) {
+      return [];
+    }
+
+    return [
+      { key: "awaiting_payment", label: formatInvoiceStatus(language, "awaiting_payment"), value: session.invoices.filter((invoice) => invoice.status === "awaiting_payment").length },
+      { key: "manual_review", label: formatInvoiceStatus(language, "manual_review"), value: session.invoices.filter((invoice) => invoice.status === "manual_review").length },
+      { key: "paid", label: formatInvoiceStatus(language, "paid"), value: session.invoices.filter((invoice) => invoice.status === "paid").length },
+    ];
+  }, [language, session]);
+  const walletCoverage = useMemo(() => {
+    if (!session) {
+      return [];
+    }
+
+    const activeNetworks = new Set(session.wallets.map((wallet) => wallet.network));
+    return WALLET_NETWORK_OPTIONS.map((option) => ({
+      ...option,
+      ready: activeNetworks.has(option.value),
+    }));
+  }, [session]);
 
   return (
     <main className="shell shell-console shell-console--redesigned">
@@ -403,8 +444,7 @@ export function SellerConsolePage() {
 
       <header className="topbar topbar--console">
         <div className="topbar-brand">
-          <span className="eyebrow">{text.eyebrow}</span>
-          <strong>{text.heroTitle}</strong>
+          <strong>reqst</strong>
         </div>
 
         <div className="topbar-actions">
@@ -464,16 +504,59 @@ export function SellerConsolePage() {
         </section>
       ) : (
         <>
-          <section className="console-hero console-surface">
-            <div className="console-hero-copy">
-              <h1>{text.heroTitle}</h1>
+          <section className="console-command console-surface">
+            <div className="console-command-main">
+              <div className="console-command-headline">
+                <div className="console-title-row">
+                  <h1>{text.heroTitle}</h1>
+                  <div className="console-title-badges">
+                    <span className="console-chip">{sellerHandle}</span>
+                    <span className="console-chip console-chip--accent">{session.me.plan.name}</span>
+                    {!session.me.plan.is_pro ? <span className="console-chip">{text.trialLeft}: {session.me.plan.trial_remaining}</span> : null}
+                  </div>
+                </div>
+              </div>
+
               <p className="hero-copy">{text.heroCopy}</p>
+
+              <div className="console-command-actions">
+                <button type="button" onClick={() => setActivePanel("create")}>
+                  {text.generate}
+                </button>
+                <button type="button" className="ghost-button compact-button" onClick={() => setActivePanel("orders")}>
+                  {text.ordersTitle}
+                </button>
+                <button type="button" className="ghost-button compact-button" onClick={() => setActivePanel("wallets")}>
+                  {text.walletTitle}
+                </button>
+              </div>
+
+              <div className="console-summary-strip">
+                <article className="console-summary-pill">
+                  <span>{text.wallets}</span>
+                  <strong>{session.wallets.length}</strong>
+                </article>
+                <article className="console-summary-pill">
+                  <span>{text.invoices}</span>
+                  <strong>{session.invoices.length}</strong>
+                </article>
+                <article className="console-summary-pill">
+                  <span>{text.recentInvoice}</span>
+                  <strong>{latestInvoice ? latestInvoice.payable_amount : "0"}</strong>
+                </article>
+              </div>
             </div>
 
-            <div className="console-hero-side">
-              <div className="console-link-card">
+            <div className="console-command-side">
+              <div className="console-link-card console-link-card--spotlight">
                 <span>{heroLinkLabel}</span>
                 <strong>{heroLink ? heroLink.replace(checkoutOrigin, "") : text.noRecentInvoice}</strong>
+                {latestInvoice ? (
+                  <div className="console-inline-meta">
+                    <span className={`status-pill status-${latestInvoice.status}`}>{formatInvoiceStatus(language, latestInvoice.status)}</span>
+                    <p>{latestInvoice.title}</p>
+                  </div>
+                ) : null}
                 {heroLink ? (
                   <div className="console-link-actions">
                     <button type="button" className="ghost-button compact-button" onClick={() => navigator.clipboard.writeText(heroLink)}>
@@ -484,26 +567,6 @@ export function SellerConsolePage() {
                     </a>
                   </div>
                 ) : null}
-              </div>
-
-              <div className="console-mini-grid">
-                <article className="console-mini-card">
-                  <span>{text.seller}</span>
-                  <strong>{sellerHandle}</strong>
-                </article>
-                <article className="console-mini-card">
-                  <span>{text.plan}</span>
-                  <strong>{session.me.plan.name}</strong>
-                  {!session.me.plan.is_pro ? <p>{text.trialLeft}: {session.me.plan.trial_remaining}</p> : null}
-                </article>
-                <article className="console-mini-card">
-                  <span>{text.wallets}</span>
-                  <strong>{session.wallets.length}</strong>
-                </article>
-                <article className="console-mini-card">
-                  <span>{text.invoices}</span>
-                  <strong>{session.invoices.length}</strong>
-                </article>
               </div>
 
               {!session.me.plan.is_pro ? (
@@ -542,25 +605,25 @@ export function SellerConsolePage() {
                 <article className="console-surface console-overview-card">
                   <div className="console-section-head">
                     <div>
-                      <h2>{text.tabs.overview}</h2>
-                      <p>{text.activeWallets}</p>
+                      <h2>{text.accountTitle}</h2>
+                      <p>{text.accountCopy}</p>
                     </div>
                   </div>
 
-                  <div className="console-stat-grid">
+                  <div className="console-stat-grid console-stat-grid--profile">
                     <article className="console-stat-card">
                       <span>{text.seller}</span>
                       <strong>{sellerHandle}</strong>
-                      <p>ID: {session.me.seller.telegram_id}</p>
+                      <p>{text.sellerIdLabel}: {session.me.seller.telegram_id}</p>
                     </article>
                     <article className="console-stat-card">
                       <span>{text.plan}</span>
                       <strong>{session.me.plan.name}</strong>
-                      <p>{text.trialLeft}: {session.me.plan.trial_remaining}</p>
+                      <p>{!session.me.plan.is_pro ? `${text.trialLeft}: ${session.me.plan.trial_remaining}` : text.unlockPrice}</p>
                     </article>
                     <article className="console-stat-card">
-                      <span>{text.wallets}</span>
-                      <strong>{session.wallets.length}</strong>
+                      <span>{text.defaultNetwork}</span>
+                      <strong>{formatNetworkLabel(session.me.seller.default_network)}</strong>
                       <p>{text.activeWallets}</p>
                     </article>
                     <article className="console-stat-card">
@@ -570,24 +633,51 @@ export function SellerConsolePage() {
                     </article>
                   </div>
                 </article>
+
+                <article className="console-surface console-section-card">
+                  <div className="console-section-head">
+                    <div>
+                      <h2>{text.invoicePulseTitle}</h2>
+                      <p>{text.invoicePulseCopy}</p>
+                    </div>
+                  </div>
+
+                  <div className="console-pulse-grid">
+                    {invoicePulse.map((item) => (
+                      <article key={item.key} className={`console-pulse-card status-${item.key}`}>
+                        <span>{item.label}</span>
+                        <strong>{item.value}</strong>
+                      </article>
+                    ))}
+                  </div>
+                </article>
               </div>
 
               <aside className="console-rail">
                 <article className="console-surface console-spotlight">
                   <div className="console-section-head">
                     <div>
-                      <h2>{text.recentInvoice}</h2>
-                      <p>{latestInvoice ? latestInvoice.title : text.noRecentInvoice}</p>
+                      <h2>{text.walletCoverageTitle}</h2>
+                      <p>{text.walletCoverageCopy}</p>
                     </div>
                   </div>
+                  <div className="console-coverage-list">
+                    {walletCoverage.map((network) => (
+                      <div key={network.value} className={network.ready ? "console-coverage-row is-ready" : "console-coverage-row"}>
+                        <div>
+                          <span>{network.label}</span>
+                          <strong>{network.ready ? text.walletReady : text.walletMissing}</strong>
+                        </div>
+                        <span className={network.ready ? "console-coverage-dot is-ready" : "console-coverage-dot"} aria-hidden="true" />
+                      </div>
+                    ))}
+                  </div>
+
                   {latestInvoice ? (
                     <div className="console-invoice-spotlight">
                       <div className="console-invoice-topline">
+                        <span>{text.latestCheckout}</span>
                         <span className={`status-pill status-${latestInvoice.status}`}>{formatInvoiceStatus(language, latestInvoice.status)}</span>
-                        <div className="invoice-amount">
-                          <strong>{latestInvoice.payable_amount}</strong>
-                          <span>{formatNetworkLabel(latestInvoice.payable_network)}</span>
-                        </div>
                       </div>
                       <h3>{latestInvoice.title}</h3>
                       <div className="console-meta-pairs">
@@ -600,18 +690,8 @@ export function SellerConsolePage() {
                           <p>{new Date(latestInvoice.expires_at).toLocaleString()}</p>
                         </div>
                       </div>
-                      <div className="invoice-actions invoice-actions--compact">
-                        <button type="button" className="ghost-button compact-button" onClick={() => navigator.clipboard.writeText(`${checkoutOrigin}/checkout/${latestInvoice.public_id}`)}>
-                          {text.copy}
-                        </button>
-                        <a className="inline-link" href={`${checkoutOrigin}/checkout/${latestInvoice.public_id}`} target="_blank" rel="noreferrer">
-                          {text.open}
-                        </a>
-                      </div>
                     </div>
-                  ) : (
-                    <p className="muted">{text.noRecentInvoice}</p>
-                  )}
+                  ) : null}
                 </article>
               </aside>
             </section>
@@ -790,9 +870,6 @@ export function SellerConsolePage() {
                           </a>
                           <button type="button" className="ghost-button compact-button" onClick={() => void handleInvoiceAction(invoice.id, "cancel")} disabled={invoice.status === "paid"}>
                             {text.cancel}
-                          </button>
-                          <button type="button" className="ghost-button compact-button" onClick={() => void handleInvoiceAction(invoice.id, "mark-paid")} disabled={invoice.status === "paid"}>
-                            {text.markPaid}
                           </button>
                         </div>
                       </article>

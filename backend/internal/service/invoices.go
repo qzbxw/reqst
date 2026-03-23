@@ -205,11 +205,12 @@ func (s *InvoiceService) generateUniquePublicID(ctx context.Context) (string, er
 
 func (s *InvoiceService) generateUniqueSuffix(ctx context.Context, address string, network store.Network) (decimal.Decimal, error) {
 	for range 64 {
-		n, err := rand.Int(rand.Reader, big.NewInt(999999))
+		n, err := rand.Int(rand.Reader, big.NewInt(9999))
 		if err != nil {
 			return decimal.Zero, fmt.Errorf("random suffix: %w", err)
 		}
 
+		// Keep the matching suffix tiny so the checkout amount stays visually close to the base price.
 		suffix := decimal.NewFromInt(n.Int64() + 1).Div(decimal.NewFromInt(1_000_000)).Round(6)
 		used, err := s.store.SuffixRecentlyUsed(ctx, address, network, suffix)
 		if err != nil {

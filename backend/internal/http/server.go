@@ -71,7 +71,6 @@ func NewServer(cfg config.Config, st *store.Store, authService *service.AuthServ
 	api.POST("/invoices", server.handleCreateInvoice)
 	api.GET("/invoices/:id", server.handleGetInvoice)
 	api.POST("/invoices/:id/cancel", server.handleCancelInvoice)
-	api.POST("/invoices/:id/mark-paid", server.handleMarkPaid)
 
 	return router
 }
@@ -254,25 +253,6 @@ func (s *Server) handleCancelInvoice(c *gin.Context) {
 		return
 	}
 	invoice, err := s.store.SetInvoiceStatus(c.Request.Context(), sc.Seller.ID, invoiceID, store.InvoiceStatusExpired)
-	if err != nil {
-		status := http.StatusInternalServerError
-		if errors.Is(err, store.ErrNotFound) {
-			status = http.StatusNotFound
-		}
-		c.JSON(status, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, publicInvoiceResponse(invoice))
-}
-
-func (s *Server) handleMarkPaid(c *gin.Context) {
-	sc := sellerFromContext(c)
-	invoiceID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid invoice id"})
-		return
-	}
-	invoice, err := s.store.MarkInvoicePaidManual(c.Request.Context(), sc.Seller.ID, invoiceID)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, store.ErrNotFound) {

@@ -100,13 +100,6 @@ export async function cancelInvoice(token: string, invoiceId: number) {
   }, token);
 }
 
-export async function markInvoicePaid(token: string, invoiceId: number) {
-  return request<Invoice>(`/api/invoices/${invoiceId}/mark-paid`, {
-    method: "POST",
-    body: JSON.stringify({}),
-  }, token);
-}
-
 export async function fetchPublicInvoice(publicId: string) {
   return request<Invoice>(`/api/public/invoices/${publicId}`);
 }
