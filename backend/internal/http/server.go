@@ -71,6 +71,7 @@ func NewServer(cfg config.Config, st *store.Store, authService *service.AuthServ
 	api.POST("/invoices", server.handleCreateInvoice)
 	api.GET("/invoices/:id", server.handleGetInvoice)
 	api.POST("/invoices/:id/cancel", server.handleCancelInvoice)
+	api.POST("/invoices/:id/mark-paid", server.handleMarkInvoicePaid)
 
 	return router
 }
@@ -252,7 +253,53 @@ func (s *Server) handleCancelInvoice(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid invoice id"})
 		return
 	}
+	currentInvoice, err := s.store.GetInvoiceByID(c.Request.Context(), sc.Seller.ID, invoiceID)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, store.ErrNotFound) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+	if !isSellerManagedInvoice(currentInvoice) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "only seller-created invoices can be canceled"})
+		return
+	}
 	invoice, err := s.store.SetInvoiceStatus(c.Request.Context(), sc.Seller.ID, invoiceID, store.InvoiceStatusExpired)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, store.ErrNotFound) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, publicInvoiceResponse(invoice))
+}
+
+func (s *Server) handleMarkInvoicePaid(c *gin.Context) {
+	sc := sellerFromContext(c)
+	invoiceID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid invoice id"})
+		return
+	}
+	currentInvoice, err := s.store.GetInvoiceByID(c.Request.Context(), sc.Seller.ID, invoiceID)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, store.ErrNotFound) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+	if !isSellerManagedInvoice(currentInvoice) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "only seller-created invoices can be marked paid"})
+		return
+	}
+
+	invoice, err := s.store.MarkInvoicePaidManual(c.Request.Context(), sc.Seller.ID, invoiceID)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, store.ErrNotFound) {
@@ -460,6 +507,10 @@ func publicInvoiceResponse(invoice store.Invoice) gin.H {
 		"checkout_url":        "/checkout/" + invoice.PublicID,
 		"payment_uri":         paymentURI(invoice),
 	}
+}
+
+func isSellerManagedInvoice(invoice store.Invoice) bool {
+	return invoice.Kind == store.InvoiceKindMerchant && invoice.SubscriptionDays <= 0
 }
 
 func (s *Server) handleCreateBillingCheckout(c *gin.Context) {

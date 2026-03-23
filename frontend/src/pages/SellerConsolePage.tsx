@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { CustomSelect } from "../components/CustomSelect";
 import {
   authenticate,
   cancelInvoice,
@@ -11,6 +12,7 @@ import {
   fetchMe,
   fetchWallets,
   getStoredToken,
+  markInvoicePaid,
   setStoredToken,
 } from "../lib/api";
 import type { Invoice, MeResponse, Network, Wallet } from "../lib/types";
@@ -389,16 +391,24 @@ export function SellerConsolePage() {
     }
   }
 
-  async function handleInvoiceAction(invoiceId: number, action: "cancel") {
+  async function handleInvoiceAction(invoiceId: number, action: "cancel" | "mark_paid") {
     if (!session) {
       return;
     }
     try {
-      await cancelInvoice(session.token, invoiceId);
+      if (action === "mark_paid") {
+        await markInvoicePaid(session.token, invoiceId);
+      } else {
+        await cancelInvoice(session.token, invoiceId);
+      }
       await refresh();
     } catch (err) {
       setError((err as Error).message);
     }
+  }
+
+  function canManageSellerInvoice(invoice: Invoice) {
+    return invoice.kind === "merchant" && (invoice.subscription_days ?? 0) <= 0;
   }
 
   function handleLogout() {
@@ -575,13 +585,12 @@ export function SellerConsolePage() {
                   <strong>{text.unlockPrice}</strong>
                   <p>{trialEnded ? text.paywallBody : text.unlockCopy}</p>
                   <div className="console-link-actions console-link-actions--billing">
-                    <select value={billingNetwork} onChange={(event) => setBillingNetwork(event.target.value as Network)} aria-label={text.billingNetwork}>
-                      {PAYABLE_NETWORK_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                    <CustomSelect
+                      value={billingNetwork}
+                      options={PAYABLE_NETWORK_OPTIONS}
+                      ariaLabel={text.billingNetwork}
+                      onChange={(value) => setBillingNetwork(value)}
+                    />
                     <button type="button" className="ghost-button compact-button" onClick={() => void handleCreateBilling()}>
                       {text.unlockNow}
                     </button>
@@ -710,13 +719,12 @@ export function SellerConsolePage() {
                 <form onSubmit={handleCreateWallet} className="form-grid form-grid--wallets console-form-grid">
                   <label>
                     {text.network}
-                    <select value={walletForm.network} onChange={(event) => setWalletForm((current) => ({ ...current, network: event.target.value as Network }))}>
-                      {WALLET_NETWORK_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                    <CustomSelect
+                      value={walletForm.network}
+                      options={WALLET_NETWORK_OPTIONS}
+                      ariaLabel={text.network}
+                      onChange={(value) => setWalletForm((current) => ({ ...current, network: value }))}
+                    />
                   </label>
                   <label>
                     {text.address}
@@ -758,13 +766,12 @@ export function SellerConsolePage() {
                     <p>{text.paywallBody}</p>
                     <label>
                       {text.billingNetwork}
-                      <select value={billingNetwork} onChange={(event) => setBillingNetwork(event.target.value as Network)}>
-                        {PAYABLE_NETWORK_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
+                      <CustomSelect
+                        value={billingNetwork}
+                        options={PAYABLE_NETWORK_OPTIONS}
+                        ariaLabel={text.billingNetwork}
+                        onChange={(value) => setBillingNetwork(value)}
+                      />
                     </label>
                     <button type="button" onClick={() => void handleCreateBilling()}>
                       {text.unlockNow} · {text.unlockPrice}
@@ -782,13 +789,12 @@ export function SellerConsolePage() {
                     </label>
                     <label>
                       {text.network}
-                      <select value={invoiceForm.payableNetwork} onChange={(event) => setInvoiceForm((current) => ({ ...current, payableNetwork: event.target.value as Network }))}>
-                        {PAYABLE_NETWORK_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
+                      <CustomSelect
+                        value={invoiceForm.payableNetwork}
+                        options={PAYABLE_NETWORK_OPTIONS}
+                        ariaLabel={text.network}
+                        onChange={(value) => setInvoiceForm((current) => ({ ...current, payableNetwork: value }))}
+                      />
                     </label>
                     <label>
                       {text.lifetime}
@@ -827,6 +833,7 @@ export function SellerConsolePage() {
                 <div className="stack-list stack-list--console">
                   {session.invoices.map((invoice) => {
                     const checkoutUrl = `${checkoutOrigin}/checkout/${invoice.public_id}`;
+                    const canManageInvoice = canManageSellerInvoice(invoice);
                     return (
                       <article key={invoice.id} className="invoice-card invoice-card--console">
                         <div className="console-invoice-topline">
@@ -868,9 +875,26 @@ export function SellerConsolePage() {
                           <a className="inline-link" href={checkoutUrl} target="_blank" rel="noreferrer">
                             {text.open}
                           </a>
-                          <button type="button" className="ghost-button compact-button" onClick={() => void handleInvoiceAction(invoice.id, "cancel")} disabled={invoice.status === "paid"}>
-                            {text.cancel}
-                          </button>
+                          {canManageInvoice ? (
+                            <>
+                              <button
+                                type="button"
+                                className="ghost-button compact-button"
+                                onClick={() => void handleInvoiceAction(invoice.id, "mark_paid")}
+                                disabled={invoice.status === "paid"}
+                              >
+                                {text.markPaid}
+                              </button>
+                              <button
+                                type="button"
+                                className="ghost-button compact-button"
+                                onClick={() => void handleInvoiceAction(invoice.id, "cancel")}
+                                disabled={invoice.status === "paid"}
+                              >
+                                {text.cancel}
+                              </button>
+                            </>
+                          ) : null}
                         </div>
                       </article>
                     );
