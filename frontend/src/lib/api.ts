@@ -1,10 +1,10 @@
 import type { Invoice, MeResponse, Wallet } from "./types";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 const TOKEN_KEY = "reqst_token";
 
 export function getApiBase() {
-  return API_BASE.replace(/\/+$/, "");
+  return API_BASE;
 }
 
 export function getStoredToken() {

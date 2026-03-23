@@ -27,6 +27,7 @@ Lean invoicing OS for solo digital sellers in Telegram. `reqst` generates quote-
 4. Open the frontend at `http://localhost:5173`.
 
 The frontend supports a development fallback auth flow when `ALLOW_INSECURE_DEV_AUTH=true`. In production, use Telegram Mini App `initData`.
+When frontend and API live on the same domain, leave `VITE_API_BASE_URL` empty and let the frontend container proxy `/api` to the backend.
 
 ## Important implementation choices
 
