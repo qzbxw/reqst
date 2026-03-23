@@ -322,27 +322,24 @@ export function SellerConsolePage() {
         </div>
 
         <div className="topbar-actions">
-          <div className="toggle-shell">
-            <span className="toggle-caption">Lang</span>
-            <div className="toggle-group" role="group" aria-label="language">
-              <button type="button" className={language === "ru" ? "toggle active" : "toggle"} onClick={() => setLanguage("ru")}>
+          <div className="micro-actions">
+            <div className="micro-action-group" role="group" aria-label="language">
+              <button type="button" className={language === "ru" ? "micro-action active" : "micro-action"} onClick={() => setLanguage("ru")}>
                 {text.language.ru}
               </button>
-              <button type="button" className={language === "en" ? "toggle active" : "toggle"} onClick={() => setLanguage("en")}>
+              <span className="micro-divider">|</span>
+              <button type="button" className={language === "en" ? "micro-action active" : "micro-action"} onClick={() => setLanguage("en")}>
                 {text.language.en}
               </button>
             </div>
-          </div>
-          <div className="toggle-shell">
-            <span className="toggle-caption">Theme</span>
-            <div className="toggle-group" role="group" aria-label="theme">
-              <button type="button" className={theme === "light" ? "toggle active" : "toggle"} onClick={() => setTheme("light")}>
-                {text.theme.light}
-              </button>
-              <button type="button" className={theme === "dark" ? "toggle active" : "toggle"} onClick={() => setTheme("dark")}>
-                {text.theme.dark}
-              </button>
-            </div>
+            <button
+              type="button"
+              className="micro-action micro-action--icon"
+              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+              aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
+            >
+              {theme === "light" ? "☀" : "☾"}
+            </button>
           </div>
           {session ? (
             <>

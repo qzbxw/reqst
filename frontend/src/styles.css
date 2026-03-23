@@ -186,6 +186,10 @@ code {
   gap: 0.35rem;
 }
 
+.topbar-brand--minimal {
+  gap: 0.12rem;
+}
+
 .topbar-brand strong {
   font-size: 1.1rem;
   letter-spacing: 0.06em;
@@ -209,6 +213,20 @@ code {
   gap: 0.65rem;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.micro-actions,
+.micro-action-group {
+  display: flex;
+  align-items: center;
+}
+
+.micro-actions {
+  gap: 0.7rem;
+}
+
+.micro-action-group {
+  gap: 0.35rem;
 }
 
 .panel-switcher {
@@ -256,6 +274,37 @@ code {
   background: color-mix(in srgb, var(--accent-soft) 88%, var(--paper-strong));
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+.micro-action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.micro-action:hover {
+  transform: none;
+  color: var(--ink);
+}
+
+.micro-action.active {
+  color: var(--ink);
+}
+
+.micro-action--icon {
+  min-width: 1.5rem;
+  font-size: 1rem;
+  text-transform: none;
+}
+
+.micro-divider {
+  color: var(--muted);
+  opacity: 0.55;
 }
 
 .eyebrow {
@@ -498,7 +547,8 @@ code {
 
 .invoice-topline,
 .invoice-actions,
-.checkout-billboard {
+.checkout-billboard,
+.receipt-hero {
   display: flex;
   gap: 1rem;
   justify-content: space-between;
@@ -582,31 +632,21 @@ code {
   padding: 1.4rem;
 }
 
-.checkout-billboard {
-  margin-bottom: 1rem;
+.receipt-hero {
+  margin-bottom: 1.25rem;
   align-items: stretch;
 }
 
-.billboard-copy {
-  flex: 1.2;
-  min-width: 280px;
+.receipt-copy {
+  flex: 1 1 420px;
+  display: grid;
+  gap: 0.9rem;
 }
 
-.billboard-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-top: 1rem;
-}
-
-.billboard-pill--timer strong {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: clamp(1.5rem, 4vw, 2.2rem);
-  letter-spacing: -0.04em;
-}
-
-.billboard-pill--timer small {
-  display: block;
-  margin-top: 0.35rem;
-  color: var(--muted);
+.receipt-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
 }
 
 .amount-totem {
@@ -624,13 +664,31 @@ code {
   letter-spacing: -0.08em;
 }
 
-.checkout-grid--lux {
-  grid-template-columns: 1.05fr 0.95fr;
+.amount-totem p,
+.amount-totem small {
+  margin: 0;
+}
+
+.amount-totem small {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.amount-totem--receipt {
+  min-width: 220px;
+}
+
+.checkout-grid--receipt {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .qr-stage {
   display: grid;
   align-content: start;
+}
+
+.qr-stage--receipt {
+  gap: 1rem;
 }
 
 .qr-shell {
@@ -640,6 +698,14 @@ code {
   border-radius: 28px;
   background: color-mix(in srgb, var(--paper-strong) 96%, transparent);
   border: 1px solid var(--line);
+}
+
+.qr-shell--receipt {
+  min-height: auto;
+  padding: 0;
+  justify-items: start;
+  border: 0;
+  background: transparent;
 }
 
 .qr-frame {
@@ -654,6 +720,14 @@ code {
     linear-gradient(180deg, color-mix(in srgb, var(--paper) 98%, transparent), color-mix(in srgb, var(--paper-strong) 100%, transparent));
   border: 1px solid var(--line);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line-strong) 40%, transparent);
+}
+
+.qr-frame--receipt {
+  width: min(100%, 272px);
+  padding: 0.65rem;
+  border-radius: 26px;
+  border: 0;
+  box-shadow: none;
 }
 
 .qr-image--lux {
@@ -702,6 +776,117 @@ code {
   line-height: 1.5;
 }
 
+.payload-callout--critical {
+  background: color-mix(in srgb, var(--danger) 10%, var(--paper-strong));
+  border-color: color-mix(in srgb, var(--danger) 26%, var(--line));
+}
+
+.payload-callout--critical span {
+  color: var(--danger);
+}
+
+.status-dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.receipt-status {
+  padding-inline: 0;
+  background: transparent;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.92rem;
+}
+
+.receipt-timer {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.receipt-timer span,
+.receipt-meta span,
+.payment-field label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.receipt-timer strong {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: clamp(2rem, 8vw, 3.8rem);
+  line-height: 0.95;
+  letter-spacing: -0.08em;
+}
+
+.payment-sheet {
+  display: grid;
+  gap: 0.85rem;
+  max-width: 100%;
+}
+
+.payment-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.9rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--paper-strong) 96%, transparent);
+}
+
+.payment-field code {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
+.payment-field--alert {
+  border-color: color-mix(in srgb, var(--danger) 28%, transparent);
+  background: color-mix(in srgb, var(--danger) 7%, var(--paper-strong));
+}
+
+.field-copy {
+  align-self: stretch;
+  min-width: 3.2rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 14px;
+  background: var(--secondary);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.field-copy:hover {
+  transform: none;
+  background: color-mix(in srgb, var(--accent-soft) 78%, var(--paper-strong));
+}
+
+.receipt-meta {
+  display: grid;
+  gap: 0.3rem;
+  padding-inline: 0.15rem;
+}
+
+.receipt-meta strong {
+  font-size: 0.98rem;
+}
+
+.checkout-footer {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.checkout-footer-link {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
 @media (max-width: 980px) {
   .hero-card--console,
   .console-grid,
@@ -730,6 +915,10 @@ code {
   .amount-totem {
     min-height: auto;
   }
+
+  .receipt-hero {
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 720px) {
@@ -756,6 +945,10 @@ code {
 
   .toggle-shell {
     justify-content: space-between;
+  }
+
+  .topbar--checkout {
+    align-items: center;
   }
 
   .toggle-group {
@@ -798,6 +991,20 @@ code {
     min-height: 48px;
   }
 
+  .micro-action,
+  .field-copy {
+    min-height: 0;
+  }
+
+  .payment-field {
+    grid-template-columns: 1fr;
+  }
+
+  .field-copy {
+    justify-self: start;
+    min-width: 0;
+  }
+
   .qr-shell {
     min-height: 260px;
   }
@@ -812,5 +1019,10 @@ code {
 
   .payload-head {
     display: grid;
+  }
+
+  .micro-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 }

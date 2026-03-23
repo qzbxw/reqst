@@ -9,45 +9,34 @@ const BOT_URL = "https://t.me/reqstxyzbot";
 
 const COPY = {
   ru: {
-    eyebrow: "Buyer Checkout",
     loading: "Загружаем инвойс...",
-    status: "Статус",
-    timeLeft: "Осталось",
+    waitingPayment: "Ожидание оплаты",
     expired: "Истёк",
-    network: "Сеть",
     wallet: "Адрес кошелька",
     amount: "Точная сумма",
     comment: "Comment / payload",
     expires: "Истекает",
     expiresAt: "До",
-    copyAddress: "Скопировать адрес",
-    copyComment: "Скопировать payload",
-    scanTitle: "Сканируй и плати",
-    warning: "Переводи только точную сумму на точную сеть. Если таймер истёк — попроси новый инвойс.",
-    stepsTitle: "Как оплатить",
-    payloadTitle: "Обязательный comment / payload",
-    payloadHint: "Для TON его нужно вставить без единого изменения, иначе автоподтверждение может не сработать.",
+    copyAddress: "Копировать адрес",
+    copyComment: "Копировать payload",
+    copyAmount: "Копировать сумму",
+    copied: "Скопировано",
+    qrLabel: "QR для быстрого открытия платежа",
+    warning: "Переводи только точную сумму в нужной сети. Если таймер истёк, запроси новый инвойс.",
+    payloadTitle: "Payload обязателен",
+    payloadHint: "Для TON вставь comment без единого изменения, иначе автоподтверждение может не сработать.",
     qrLoading: "Готовим QR...",
-    qrFallback: "Если QR не открылся, используй адрес и payload справа.",
+    qrFallback: "Если QR не открылся, используй адрес и payload.",
     paymentRequest: "Платёжный запрос",
-    brandLabel: "Платформа",
-    steps: [
-      "Открой нужную сеть и проверь адрес.",
-      "Отправь точную сумму, которую видишь на экране.",
-      "Если есть comment/payload для TON — скопируй его без изменений.",
-    ],
-    light: "Свет",
-    dark: "Тьма",
     ru: "РУ",
     en: "EN",
+    receiptLabel: "Инвойс",
+    footerLink: "Открыть бота",
   },
   en: {
-    eyebrow: "Buyer Checkout",
     loading: "Loading invoice...",
-    status: "Status",
-    timeLeft: "Time left",
+    waitingPayment: "Awaiting payment",
     expired: "Expired",
-    network: "Network",
     wallet: "Wallet address",
     amount: "Exact amount",
     comment: "Comment / payload",
@@ -55,24 +44,19 @@ const COPY = {
     expiresAt: "Until",
     copyAddress: "Copy address",
     copyComment: "Copy payload",
-    scanTitle: "Scan and pay",
-    warning: "Send only the exact amount on the exact network. If the timer is over, ask the seller for a fresh invoice.",
-    stepsTitle: "How to pay",
-    payloadTitle: "Required comment / payload",
-    payloadHint: "For TON, paste it exactly as shown or automatic matching may fail.",
+    copyAmount: "Copy amount",
+    copied: "Copied",
+    qrLabel: "QR for opening the payment flow",
+    warning: "Send only the exact amount on the correct network. If the timer is over, ask for a fresh invoice.",
+    payloadTitle: "Payload required",
+    payloadHint: "For TON, paste the comment exactly as shown or automatic matching may fail.",
     qrLoading: "Preparing QR...",
-    qrFallback: "If the QR does not open, use the address and payload shown here.",
+    qrFallback: "If the QR does not open, use the address and payload.",
     paymentRequest: "Payment request",
-    brandLabel: "Platform",
-    steps: [
-      "Open the correct network and verify the wallet address.",
-      "Send the exact amount shown on this screen.",
-      "If TON requires a comment or payload, copy it exactly as shown.",
-    ],
-    light: "Light",
-    dark: "Dark",
     ru: "RU",
     en: "EN",
+    receiptLabel: "Invoice",
+    footerLink: "Open bot",
   },
 } as const;
 
@@ -116,6 +100,7 @@ export function CheckoutPage() {
   const [error, setError] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [now, setNow] = useState(Date.now());
+  const [copiedField, setCopiedField] = useState<"amount" | "address" | "comment" | "">("");
 
   useEffect(() => {
     let active = true;
@@ -156,7 +141,7 @@ export function CheckoutPage() {
     const source = invoice.payment_uri || fallbackPaymentURI(invoice);
 
     void QRCode.toDataURL(source, {
-      width: 360,
+      width: 288,
       margin: 1,
       errorCorrectionLevel: "M",
       color: {
@@ -168,7 +153,7 @@ export function CheckoutPage() {
       .catch(async () => {
         try {
           const fallback = await QRCode.toDataURL(fallbackPaymentURI(invoice), {
-            width: 360,
+            width: 288,
             margin: 1,
             errorCorrectionLevel: "M",
             color: {
@@ -182,6 +167,14 @@ export function CheckoutPage() {
         }
       });
   }, [invoice, theme]);
+
+  useEffect(() => {
+    if (!copiedField) {
+      return;
+    }
+    const timeout = window.setTimeout(() => setCopiedField(""), 1400);
+    return () => window.clearTimeout(timeout);
+  }, [copiedField]);
 
   const timeLeft = useMemo(() => {
     if (!invoice) {
@@ -199,6 +192,17 @@ export function CheckoutPage() {
 
   const title = invoice?.title?.trim() || text.paymentRequest;
   const statusLabel = invoice ? formatStatus(language, invoice.status) : "";
+  const paymentRows = invoice
+    ? [
+        { key: "amount" as const, label: text.amount, value: `${invoice.payable_amount} ${invoice.payable_network}`, copyLabel: text.copyAmount },
+        { key: "address" as const, label: text.wallet, value: invoice.destination_address, copyLabel: text.copyAddress },
+      ]
+    : [];
+
+  async function copyValue(key: "amount" | "address" | "comment", value: string) {
+    await navigator.clipboard.writeText(value);
+    setCopiedField(key);
+  }
 
   return (
     <main className="shell checkout-shell checkout-shell--wide">
@@ -206,36 +210,28 @@ export function CheckoutPage() {
       <div className="ambient ambient-right" />
 
       <header className="topbar topbar--checkout">
-        <div className="topbar-brand">
-          <span className="eyebrow">{text.eyebrow}</span>
-          <a className="brand-link" href={BOT_URL} target="_blank" rel="noreferrer">
-            <strong>reqst</strong>
-            <span>{text.brandLabel} · t.me/reqstxyzbot</span>
-          </a>
+        <div className="topbar-brand topbar-brand--minimal">
+          <strong>reqst</strong>
+          <span>{text.receiptLabel}</span>
         </div>
-        <div className="topbar-actions">
-          <div className="toggle-shell">
-            <span className="toggle-caption">Lang</span>
-            <div className="toggle-group" role="group" aria-label="language">
-              <button type="button" className={language === "ru" ? "toggle active" : "toggle"} onClick={() => setLanguage("ru")}>
-                {text.ru}
-              </button>
-              <button type="button" className={language === "en" ? "toggle active" : "toggle"} onClick={() => setLanguage("en")}>
-                {text.en}
-              </button>
-            </div>
+        <div className="micro-actions">
+          <div className="micro-action-group" role="group" aria-label="language">
+            <button type="button" className={language === "ru" ? "micro-action active" : "micro-action"} onClick={() => setLanguage("ru")}>
+              {text.ru}
+            </button>
+            <span className="micro-divider">|</span>
+            <button type="button" className={language === "en" ? "micro-action active" : "micro-action"} onClick={() => setLanguage("en")}>
+              {text.en}
+            </button>
           </div>
-          <div className="toggle-shell">
-            <span className="toggle-caption">Theme</span>
-            <div className="toggle-group" role="group" aria-label="theme">
-              <button type="button" className={theme === "light" ? "toggle active" : "toggle"} onClick={() => setTheme("light")}>
-                {text.light}
-              </button>
-              <button type="button" className={theme === "dark" ? "toggle active" : "toggle"} onClick={() => setTheme("dark")}>
-                {text.dark}
-              </button>
-            </div>
-          </div>
+          <button
+            type="button"
+            className="micro-action micro-action--icon"
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
+          >
+            {theme === "light" ? "☀" : "☾"}
+          </button>
         </div>
       </header>
 
@@ -245,92 +241,87 @@ export function CheckoutPage() {
 
         {invoice ? (
           <>
-            <div className="checkout-billboard">
-              <div className="billboard-copy">
-                <h1>{title}</h1>
-                <p className="hero-copy">{text.warning}</p>
-
-                <div className="billboard-grid">
-                  <div className="billboard-pill">
-                    <span>{text.status}</span>
-                    <strong className={`status-${invoice.status}`}>{statusLabel}</strong>
-                  </div>
-                  <div className="billboard-pill billboard-pill--timer">
-                    <span>{text.timeLeft}</span>
-                    <strong>{timeLeft}</strong>
-                    <small>{text.expiresAt}: {new Date(invoice.expires_at).toLocaleString()}</small>
-                  </div>
-                  <div className="billboard-pill">
-                    <span>{text.network}</span>
-                    <strong>{invoice.payable_network}</strong>
-                  </div>
+            <div className="receipt-hero">
+              <div className="receipt-copy">
+                <div className="receipt-heading">
+                  <span className={`status-dot status-${invoice.status}`} aria-hidden="true" />
+                  <span className={`status-pill receipt-status status-${invoice.status}`}>{statusLabel}</span>
                 </div>
+                <h1>{title}</h1>
+                <div className="receipt-timer">
+                  <span>{text.waitingPayment}</span>
+                  <strong>{timeLeft}</strong>
+                </div>
+                <p className="hero-copy">{text.warning}</p>
               </div>
 
-              <div className="amount-totem">
+              <div className="amount-totem amount-totem--receipt">
                 <span>{text.amount}</span>
                 <strong>{invoice.payable_amount}</strong>
                 <p>{invoice.payable_network}</p>
+                <small>
+                  {text.expiresAt}: {new Date(invoice.expires_at).toLocaleString()}
+                </small>
               </div>
             </div>
 
-            <div className="checkout-grid checkout-grid--lux">
-              <article className="panel elevated-panel">
-                <div className="panel-header">
-                  <h2>{text.stepsTitle}</h2>
-                </div>
-                <ol className="step-list">
-                  {text.steps.map((step, index) => (
-                    <li key={step} className="step-item">
-                      <span>{String(index + 1).padStart(2, "0")}</span>
-                      <p>{step}</p>
-                    </li>
-                  ))}
-                </ol>
-
-                <div className="detail-row">
-                  <span>{text.wallet}</span>
-                  <code>{invoice.destination_address}</code>
-                  <button type="button" className="ghost-button compact-button detail-copy" onClick={() => navigator.clipboard.writeText(invoice.destination_address)}>
-                    {text.copyAddress}
-                  </button>
-                </div>
-                <div className="detail-row">
-                  <span>{text.amount}</span>
-                  <code>{invoice.payable_amount} {invoice.payable_network}</code>
-                </div>
-                {invoice.payment_comment ? (
-                  <div className="payload-callout">
-                    <div className="payload-head">
-                      <div>
-                        <span>{text.payloadTitle}</span>
-                        <p>{text.payloadHint}</p>
-                      </div>
-                      <button type="button" className="ghost-button compact-button" onClick={() => navigator.clipboard.writeText(invoice.payment_comment ?? "")}>
-                        {text.copyComment}
-                      </button>
-                    </div>
-                    <code>{invoice.payment_comment}</code>
-                  </div>
-                ) : null}
-                <div className="detail-row">
-                  <span>{text.expires}</span>
-                  <code>{new Date(invoice.expires_at).toLocaleString()}</code>
-                </div>
-              </article>
-
-              <aside className="panel qr-stage">
-                <div className="panel-header">
-                  <h2>{text.scanTitle}</h2>
-                </div>
-                <div className="qr-shell">
-                  <div className="qr-frame">
+            <div className="checkout-grid checkout-grid--receipt">
+              <aside className="qr-stage qr-stage--receipt">
+                <div className="qr-shell qr-shell--receipt">
+                  <div className="qr-frame qr-frame--receipt">
                     {qrDataUrl ? <img className="qr-image qr-image--lux" src={qrDataUrl} alt="Invoice QR" /> : <p className="muted">{text.qrLoading}</p>}
                   </div>
                 </div>
-                <p className="muted center-text">{text.qrFallback}</p>
+
+                <div className="payment-sheet">
+                  {invoice.payment_comment ? (
+                    <div className="payload-callout payload-callout--critical">
+                      <div className="payload-head">
+                        <div>
+                          <span>{text.payloadTitle}</span>
+                          <p>{text.payloadHint}</p>
+                        </div>
+                        <button type="button" className="field-copy" onClick={() => void copyValue("comment", invoice.payment_comment ?? "")} aria-label={text.copyComment}>
+                          {copiedField === "comment" ? text.copied : "⧉"}
+                        </button>
+                      </div>
+                      <div className="payment-field payment-field--alert">
+                        <div>
+                          <label>{text.comment}</label>
+                          <code>{invoice.payment_comment}</code>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {paymentRows.map((row) => (
+                    <div key={row.key} className="payment-field">
+                      <div>
+                        <label>{row.label}</label>
+                        <code>{row.value}</code>
+                      </div>
+                      <button type="button" className="field-copy" onClick={() => void copyValue(row.key, row.value)} aria-label={row.copyLabel}>
+                        {copiedField === row.key ? text.copied : "⧉"}
+                      </button>
+                    </div>
+                  ))}
+
+                  <div className="receipt-meta">
+                    <span>{text.expires}</span>
+                    <strong>{new Date(invoice.expires_at).toLocaleString()}</strong>
+                  </div>
+                </div>
+
+                <p className="muted">{text.qrLabel}</p>
+                <p className="muted">{text.qrFallback}</p>
               </aside>
             </div>
+
+            <footer className="checkout-footer">
+              <a className="checkout-footer-link" href={BOT_URL} target="_blank" rel="noreferrer">
+                reqst · {text.footerLink}
+              </a>
+            </footer>
           </>
         ) : null}
       </section>
