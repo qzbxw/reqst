@@ -31,8 +31,13 @@ const COPY = {
     paymentRequest: "Платёжный запрос",
     ru: "РУ",
     en: "EN",
-    receiptLabel: "Reqst receipt",
-    footerLink: "Powered by Reqst",
+    receiptLabel: "Reqst",
+    service: "Услуга",
+    status: "Статус",
+    officialMark: "Подтверждено Reqst",
+    receiptOutroPaid: "Платёж закрыт и сохранён в истории Reqst.",
+    receiptOutroExpired: "Срок оплаты истёк. Этот экран остаётся только как запись по инвойсу.",
+    footerLink: "Reqst",
     networkOnly: "Только эта сеть",
     paidTitle: "Оплата получена",
     paidBody: "Платёж подтверждён. Можно возвращаться к продавцу или закрывать страницу.",
@@ -66,8 +71,13 @@ const COPY = {
     paymentRequest: "Payment request",
     ru: "RU",
     en: "EN",
-    receiptLabel: "Reqst receipt",
-    footerLink: "Powered by Reqst",
+    receiptLabel: "Reqst",
+    service: "Service",
+    status: "Status",
+    officialMark: "Confirmed by Reqst",
+    receiptOutroPaid: "This payment has been settled and archived in Reqst.",
+    receiptOutroExpired: "The payment window is closed. This screen remains only as the invoice record.",
+    footerLink: "Reqst",
     networkOnly: "Only this network",
     paidTitle: "Payment received",
     paidBody: "The payment is confirmed. You can return to the seller or close this page.",
@@ -110,6 +120,25 @@ function fallbackPaymentURI(invoice: Invoice) {
 
 function formatStatus(language: keyof typeof STATUS_LABELS, status: string) {
   return STATUS_LABELS[language][status as keyof (typeof STATUS_LABELS)[typeof language]] ?? status.replaceAll("_", " ");
+}
+
+function formatNetworkLabel(network: Invoice["payable_network"]) {
+  switch (network) {
+    case "TRON":
+      return "TRON / USDT";
+    case "SOLANA":
+      return "SOLANA / USDC-USDT";
+    case "EVM":
+      return "ETHEREUM / ERC20";
+    case "BASE":
+      return "BASE / USDT";
+    case "ARBITRUM":
+      return "ARBITRUM / USDT";
+    case "BSC":
+      return "BSC / USDT";
+    default:
+      return network;
+  }
 }
 
 function formatAddressPreview(address: string) {
@@ -277,104 +306,156 @@ export function CheckoutPage() {
 
         {invoice ? (
           <>
-            <div className={isPaid ? "receipt-hero receipt-hero--paid" : isExpired ? "receipt-hero receipt-hero--expired" : "receipt-hero"}>
-              <div className="receipt-copy">
-                <div className="receipt-brandline">
-                  <span className="receipt-brandmark" aria-hidden="true" />
-                  <span>{text.receiptLabel}</span>
-                </div>
-                <div className="receipt-heading">
-                  <span className={`status-dot status-${invoice.status}`} aria-hidden="true" />
-                  <span className={`status-pill receipt-status status-${invoice.status}`}>
-                    {isPaid ? text.paidBadge : isExpired ? text.expiredBadge : statusLabel}
-                  </span>
-                </div>
-                <h1>{isPaid ? text.paidTitle : isExpired ? text.expiredTitle : title}</h1>
-                {!isPaid ? (
-                  <div className={isExpiringSoon ? "receipt-timer receipt-timer--urgent" : "receipt-timer"}>
-                    <span>{isExpired ? text.expired : text.waitingPayment}</span>
-                    <strong>{timeLeft}</strong>
-                    {isExpiringSoon ? <em>{text.expiresSoon}</em> : null}
+            {isPaid || isExpired ? (
+              <section className={isPaid ? "completion-receipt completion-receipt--paid" : "completion-receipt completion-receipt--expired"}>
+                <div className="completion-paper">
+                  <div className="receipt-brandline completion-brandline">
+                    <span className="receipt-brandmark" aria-hidden="true" />
+                    <span>{text.receiptLabel}</span>
                   </div>
-                ) : null}
-                <p className="hero-copy">{isPaid ? text.paidBody : isExpired ? text.expiredBody : text.warning}</p>
-                <div className="receipt-docmeta">
-                  <div>
-                    <span>{text.invoiceId}</span>
-                    <strong>{invoice.public_id}</strong>
-                  </div>
-                  <div>
-                    <span>{text.expiresAt}</span>
-                    <strong>{new Date(invoice.expires_at).toLocaleString()}</strong>
-                  </div>
-                </div>
-                {isExpired && !isPaid ? <p className="muted">{text.verifyManually}</p> : null}
-              </div>
 
-              <div className="amount-totem amount-totem--receipt">
-                <span>{text.amount}</span>
-                <strong>{invoice.payable_amount}</strong>
-                <div className="network-badge">
-                  <b>{invoice.payable_network}</b>
-                  <small>{text.networkOnly}</small>
-                </div>
-              </div>
-            </div>
-
-            <div className="checkout-grid checkout-grid--receipt">
-              <section className="payment-sheet payment-sheet--receipt">
-                <div className="payment-sheet-header">
-                  <span className="payment-sheet-kicker">{text.receiptLabel}</span>
-                </div>
-                <div className="payment-essentials">
-                  {invoice.payment_comment ? (
-                    <div className="payload-callout payload-callout--critical">
-                      <div className="payload-head">
-                        <div>
-                          <span>{text.payloadTitle}</span>
-                          <p>{text.payloadHint}</p>
-                        </div>
-                        <button type="button" className="field-copy" onClick={() => void copyValue("comment", invoice.payment_comment ?? "")} aria-label={text.copyComment}>
-                          {copiedField === "comment" ? text.copied : "⧉"}
-                        </button>
-                      </div>
-                      <div className="payment-field payment-field--alert">
-                        <div>
-                          <label>{text.comment}</label>
-                          <code>{invoice.payment_comment}</code>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {paymentRows.map((row) => (
-                    <button key={row.key} type="button" className="payment-field payment-field--button" onClick={() => void copyValue(row.key, row.value)}>
-                      <div>
-                        <label>{row.label}</label>
-                        <code>{row.value}</code>
-                        <small>{row.secondary}</small>
-                      </div>
-                      <span className="field-copy" aria-label={row.copyLabel}>
-                        {copiedField === row.key ? text.copied : "⧉"}
+                  <div className="completion-head">
+                    <div>
+                      <span className={`status-pill completion-stamp status-${invoice.status}`}>
+                        {isPaid ? text.paidBadge : text.expiredBadge}
                       </span>
-                    </button>
-                  ))}
-                </div>
+                      <h1>{isPaid ? text.paidTitle : text.expiredTitle}</h1>
+                      <p className="hero-copy">{isPaid ? text.paidBody : text.expiredBody}</p>
+                    </div>
+                    <div className="completion-mark">{text.officialMark}</div>
+                  </div>
 
-                <div className="receipt-meta">
-                  <span>{text.expires}</span>
-                  <strong>{new Date(invoice.expires_at).toLocaleString()}</strong>
+                  <div className="completion-summary">
+                    <span>{text.amount}</span>
+                    <strong>{invoice.payable_amount}</strong>
+                    <div className="network-badge">
+                      <b>{formatNetworkLabel(invoice.payable_network)}</b>
+                      <small>{text.networkOnly}</small>
+                    </div>
+                  </div>
+
+                  <div className="completion-ledger">
+                    <div>
+                      <span>{text.service}</span>
+                      <strong>{title}</strong>
+                    </div>
+                    <div>
+                      <span>{text.invoiceId}</span>
+                      <strong>{invoice.public_id}</strong>
+                    </div>
+                    <div>
+                      <span>{text.status}</span>
+                      <strong>{isPaid ? text.paidBadge : text.expiredBadge}</strong>
+                    </div>
+                    <div>
+                      <span>{text.expiresAt}</span>
+                      <strong>{new Date(invoice.expires_at).toLocaleString()}</strong>
+                    </div>
+                  </div>
+
+                  <div className="completion-note">
+                    <p>{isPaid ? text.receiptOutroPaid : text.receiptOutroExpired}</p>
+                    {isExpired ? <small>{text.verifyManually}</small> : null}
+                  </div>
                 </div>
               </section>
+            ) : (
+              <>
+                <div className="receipt-hero">
+                  <div className="receipt-copy">
+                    <div className="receipt-brandline">
+                      <span className="receipt-brandmark" aria-hidden="true" />
+                      <span>{text.receiptLabel}</span>
+                    </div>
+                    <div className="receipt-heading">
+                      <span className={`status-dot status-${invoice.status}`} aria-hidden="true" />
+                      <span className={`status-pill receipt-status status-${invoice.status}`}>{statusLabel}</span>
+                    </div>
+                    <h1>{title}</h1>
+                    <div className={isExpiringSoon ? "receipt-timer receipt-timer--urgent" : "receipt-timer"}>
+                      <span>{text.waitingPayment}</span>
+                      <strong>{timeLeft}</strong>
+                      {isExpiringSoon ? <em>{text.expiresSoon}</em> : null}
+                    </div>
+                    <p className="hero-copy">{text.warning}</p>
+                    <div className="receipt-docmeta">
+                      <div>
+                        <span>{text.invoiceId}</span>
+                        <strong>{invoice.public_id}</strong>
+                      </div>
+                      <div>
+                        <span>{text.expiresAt}</span>
+                        <strong>{new Date(invoice.expires_at).toLocaleString()}</strong>
+                      </div>
+                    </div>
+                  </div>
 
-              <aside className="qr-stage qr-stage--receipt">
-                <div className="qr-shell qr-shell--receipt">
-                  <div className={isPaid ? "qr-frame qr-frame--receipt qr-frame--paid" : isExpired ? "qr-frame qr-frame--receipt qr-frame--expired" : "qr-frame qr-frame--receipt"}>
-                    {qrDataUrl ? <img className="qr-image qr-image--lux" src={qrDataUrl} alt="Invoice QR" /> : <p className="muted">{text.qrLoading}</p>}
+                  <div className="amount-totem amount-totem--receipt">
+                    <span>{text.amount}</span>
+                    <strong>{invoice.payable_amount}</strong>
+                    <div className="network-badge">
+                      <b>{formatNetworkLabel(invoice.payable_network)}</b>
+                      <small>{text.networkOnly}</small>
+                    </div>
                   </div>
                 </div>
-              </aside>
-            </div>
+
+                <div className="checkout-grid checkout-grid--receipt">
+                  <section className="payment-sheet payment-sheet--receipt">
+                    <div className="payment-sheet-header">
+                      <span className="payment-sheet-kicker">{text.receiptLabel}</span>
+                    </div>
+                    <div className="payment-essentials">
+                      {invoice.payment_comment ? (
+                        <div className="payload-callout payload-callout--critical">
+                          <div className="payload-head">
+                            <div>
+                              <span>{text.payloadTitle}</span>
+                              <p>{text.payloadHint}</p>
+                            </div>
+                            <button type="button" className="field-copy" onClick={() => void copyValue("comment", invoice.payment_comment ?? "")} aria-label={text.copyComment}>
+                              {copiedField === "comment" ? text.copied : "⧉"}
+                            </button>
+                          </div>
+                          <div className="payment-field payment-field--alert">
+                            <div>
+                              <label>{text.comment}</label>
+                              <code>{invoice.payment_comment}</code>
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {paymentRows.map((row) => (
+                        <button key={row.key} type="button" className="payment-field payment-field--button" onClick={() => void copyValue(row.key, row.value)}>
+                          <div>
+                            <label>{row.label}</label>
+                            <code>{row.value}</code>
+                            <small>{row.secondary}</small>
+                          </div>
+                          <span className="field-copy" aria-label={row.copyLabel}>
+                            {copiedField === row.key ? text.copied : "⧉"}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="receipt-meta">
+                      <span>{text.expires}</span>
+                      <strong>{new Date(invoice.expires_at).toLocaleString()}</strong>
+                    </div>
+                  </section>
+
+                  <aside className="qr-stage qr-stage--receipt">
+                    <div className="qr-shell qr-shell--receipt">
+                      <div className="qr-frame qr-frame--receipt">
+                        {qrDataUrl ? <img className="qr-image qr-image--lux" src={qrDataUrl} alt="Invoice QR" /> : <p className="muted">{text.qrLoading}</p>}
+                      </div>
+                    </div>
+                  </aside>
+                </div>
+              </>
+            )}
 
             <footer className="checkout-footer">
               <a className="checkout-footer-link" href={BOT_URL} target="_blank" rel="noreferrer">

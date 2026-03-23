@@ -84,6 +84,15 @@ export async function createInvoice(token: string, payload: {
   }, token);
 }
 
+export async function createBillingCheckout(token: string, payload: {
+  payable_network: string;
+}) {
+  return request<Invoice>("/api/billing/checkout", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, token);
+}
+
 export async function cancelInvoice(token: string, invoiceId: number) {
   return request<Invoice>(`/api/invoices/${invoiceId}/cancel`, {
     method: "POST",

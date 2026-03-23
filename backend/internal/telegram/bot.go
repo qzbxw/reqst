@@ -47,11 +47,12 @@ type botSession struct {
 }
 
 type botInvoiceDraft struct {
-	WalletID      int64
-	WalletNetwork store.Network
-	WalletLabel   string
-	Title         string
-	Amount        string
+	WalletID       int64
+	WalletNetwork  store.Network
+	PayableNetwork store.Network
+	WalletLabel    string
+	Title          string
+	Amount         string
 }
 
 type tgAPIResponse[T any] struct {
@@ -224,8 +225,10 @@ func (b *BotWorker) handleCommand(ctx context.Context, seller store.Seller, mess
 		return b.renderInvoiceWalletPicker(ctx, seller, message.Chat.ID, 0)
 	case "/wallets":
 		return b.renderWallets(ctx, seller, message.Chat.ID, 0, "")
+	case "/upgrade":
+		return b.renderUpgrade(ctx, seller, message.Chat.ID, 0, "")
 	default:
-		_, err := b.sendMessage(ctx, message.Chat.ID, "Use /invoice to create an invoice or /wallets to manage payout addresses.", b.reqstKeyboard(nil))
+		_, err := b.sendMessage(ctx, message.Chat.ID, "Use /invoice to create an invoice, /wallets to manage payout addresses, or /upgrade to unlock PRO.", b.reqstKeyboard(nil))
 		return err
 	}
 }
@@ -253,6 +256,8 @@ func (b *BotWorker) handleCallback(ctx context.Context, query *tgCallbackQuery) 
 		err = b.renderWallets(ctx, seller, query.Message.Chat.ID, query.Message.MessageID, "")
 	case data == "screen:invoice":
 		err = b.renderInvoiceWalletPicker(ctx, seller, query.Message.Chat.ID, query.Message.MessageID)
+	case data == "screen:upgrade":
+		err = b.renderUpgrade(ctx, seller, query.Message.Chat.ID, query.Message.MessageID, "")
 	case strings.HasPrefix(data, "wallet:set:"):
 		network := store.Network(strings.TrimPrefix(data, "wallet:set:"))
 		session.Flow = flowWalletAddress
@@ -282,11 +287,47 @@ func (b *BotWorker) handleCallback(ctx context.Context, query *tgCallbackQuery) 
 			err = getErr
 			break
 		}
-		session.Flow = flowInvoiceTitle
 		session.DraftInvoice = botInvoiceDraft{
 			WalletID:      wallet.ID,
 			WalletNetwork: wallet.Network,
-			WalletLabel:   fmt.Sprintf("%s • %s", wallet.Network, shortAddress(wallet.Address)),
+			WalletLabel:   fmt.Sprintf("%s • %s", networkButtonLabel(wallet.Network), shortAddress(wallet.Address)),
+		}
+		rows := make([][]tgInlineKeyboardButton, 0, 5)
+		for _, network := range payableNetworksForWallet(wallet.Network) {
+			rows = append(rows, []tgInlineKeyboardButton{{
+				Text:         networkButtonLabel(network),
+				CallbackData: fmt.Sprintf("invoice:network:%d:%s", wallet.ID, network),
+			}})
+		}
+		rows = append(rows, []tgInlineKeyboardButton{{Text: "Cancel", CallbackData: "invoice:cancel"}})
+		err = b.editMessage(ctx, query.Message.Chat.ID, query.Message.MessageID, b.invoiceNetworkPrompt(session.DraftInvoice), b.reqstKeyboard(rows))
+	case strings.HasPrefix(data, "invoice:network:"):
+		parts := strings.Split(data, ":")
+		if len(parts) != 4 {
+			err = fmt.Errorf("invalid invoice network callback")
+			break
+		}
+		walletID, parseErr := strconv.ParseInt(parts[2], 10, 64)
+		if parseErr != nil {
+			err = parseErr
+			break
+		}
+		wallet, getErr := b.store.GetWalletByID(ctx, seller.ID, walletID)
+		if getErr != nil {
+			err = getErr
+			break
+		}
+		network := store.Network(parts[3])
+		if !network.IsSupportedPayableNetwork() || wallet.Network != network.WalletBucket() {
+			err = fmt.Errorf("wallet does not support network %s", network)
+			break
+		}
+		session.Flow = flowInvoiceTitle
+		session.DraftInvoice = botInvoiceDraft{
+			WalletID:       wallet.ID,
+			WalletNetwork:  wallet.Network,
+			PayableNetwork: network,
+			WalletLabel:    fmt.Sprintf("%s • %s", networkButtonLabel(network), shortAddress(wallet.Address)),
 		}
 		err = b.editMessage(ctx, query.Message.Chat.ID, query.Message.MessageID, b.invoiceTitlePrompt(session.DraftInvoice), b.reqstKeyboard([][]tgInlineKeyboardButton{
 			{{Text: "Cancel", CallbackData: "invoice:cancel"}},
@@ -298,6 +339,18 @@ func (b *BotWorker) handleCallback(ctx context.Context, query *tgCallbackQuery) 
 			break
 		}
 		err = b.finishInvoiceWizard(ctx, seller, query.Message.Chat.ID, query.Message.MessageID, minutes)
+	case strings.HasPrefix(data, "upgrade:network:"):
+		network := store.Network(strings.TrimPrefix(data, "upgrade:network:"))
+		invoice, createErr := b.invoiceService.CreateSubscriptionInvoice(ctx, seller, network)
+		if createErr != nil {
+			err = createErr
+			break
+		}
+		callbackText = "Upgrade checkout created"
+		err = b.editMessage(ctx, query.Message.Chat.ID, query.Message.MessageID, fmt.Sprintf("Reqst PRO checkout created.\n\n%s\n%s %s\n30 days of unlimited invoices.", invoice.PublicID, invoice.PayableAmount.StringFixed(6), invoice.PayableNetwork), b.reqstKeyboard([][]tgInlineKeyboardButton{
+			{{Text: "Open checkout", URL: b.appURL("/checkout/" + invoice.PublicID)}},
+			{{Text: "Home", CallbackData: "nav:home"}},
+		}))
 	case data == "invoice:cancel":
 		b.resetSession(query.Message.Chat.ID)
 		err = b.renderHome(ctx, seller, query.Message.Chat.ID, query.Message.MessageID)
@@ -419,10 +472,13 @@ func (b *BotWorker) finishInvoiceWizard(ctx context.Context, seller store.Seller
 		Title:            session.DraftInvoice.Title,
 		BaseAmountUSD:    amount,
 		WalletID:         session.DraftInvoice.WalletID,
-		PayableNetwork:   session.DraftInvoice.WalletNetwork,
+		PayableNetwork:   session.DraftInvoice.PayableNetwork,
 		ExpiresInMinutes: minutes,
 	})
 	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "trial limit reached") {
+			return b.renderUpgrade(ctx, seller, chatID, messageID, "Trial limit reached. Unlock PRO to keep generating links.")
+		}
 		return err
 	}
 
@@ -459,6 +515,9 @@ func (b *BotWorker) renderHome(ctx context.Context, seller store.Seller, chatID 
 			{Text: "New invoice", CallbackData: "screen:invoice"},
 			{Text: "Wallets", CallbackData: "screen:wallets"},
 		},
+		{
+			{Text: "Unlock PRO", CallbackData: "screen:upgrade"},
+		},
 	}))
 }
 
@@ -476,7 +535,7 @@ func (b *BotWorker) renderWallets(ctx context.Context, seller store.Seller, chat
 		lines = append(lines, "", "No active wallets yet.")
 	} else {
 		for _, wallet := range wallets {
-			lines = append(lines, "", fmt.Sprintf("%s\n%s", wallet.Network, wallet.Address))
+			lines = append(lines, "", fmt.Sprintf("%s\n%s", networkButtonLabel(wallet.Network), wallet.Address))
 		}
 	}
 
@@ -486,12 +545,13 @@ func (b *BotWorker) renderWallets(ctx context.Context, seller store.Seller, chat
 			{Text: "Set TRON", CallbackData: "wallet:set:TRON"},
 		},
 		{
+			{Text: "Set SOLANA", CallbackData: "wallet:set:SOLANA"},
 			{Text: "Set EVM", CallbackData: "wallet:set:EVM"},
 		},
 	}
 	for _, wallet := range wallets {
 		rows = append(rows, []tgInlineKeyboardButton{
-			{Text: "Disable " + string(wallet.Network), CallbackData: fmt.Sprintf("wallet:disable:%d", wallet.ID)},
+			{Text: "Disable " + networkButtonLabel(wallet.Network), CallbackData: fmt.Sprintf("wallet:disable:%d", wallet.ID)},
 		})
 	}
 	rows = append(rows, []tgInlineKeyboardButton{{Text: "Home", CallbackData: "nav:home"}})
@@ -510,12 +570,37 @@ func (b *BotWorker) renderInvoiceWalletPicker(ctx context.Context, seller store.
 	rows := make([][]tgInlineKeyboardButton, 0, len(wallets)+1)
 	for _, wallet := range wallets {
 		rows = append(rows, []tgInlineKeyboardButton{
-			{Text: fmt.Sprintf("%s • %s", wallet.Network, shortAddress(wallet.Address)), CallbackData: fmt.Sprintf("invoice:new:%d", wallet.ID)},
+			{Text: fmt.Sprintf("%s • %s", networkButtonLabel(wallet.Network), shortAddress(wallet.Address)), CallbackData: fmt.Sprintf("invoice:new:%d", wallet.ID)},
 		})
 	}
 	rows = append(rows, []tgInlineKeyboardButton{{Text: "Home", CallbackData: "nav:home"}})
 	text := "New invoice\n\nChoose which wallet should receive the payment."
 	return b.sendOrEdit(ctx, chatID, messageID, text, b.reqstKeyboard(rows))
+}
+
+func (b *BotWorker) renderUpgrade(ctx context.Context, seller store.Seller, chatID int64, messageID int64, note string) error {
+	lines := []string{
+		"Unlock Reqst PRO",
+		"",
+		"Unlimited invoices for 30 days.",
+		"Price: 39 USDT.",
+	}
+	if note != "" {
+		lines = append(lines, "", note)
+	}
+	if seller.IsPRO(time.Now()) {
+		lines = append(lines, "", "Your PRO subscription is already active. You can still extend it early.")
+	}
+
+	rows := make([][]tgInlineKeyboardButton, 0, 7)
+	for _, network := range []store.Network{store.NetworkTRON, store.NetworkSOLANA, store.NetworkBASE, store.NetworkARBITRUM, store.NetworkBSC, store.NetworkTON} {
+		rows = append(rows, []tgInlineKeyboardButton{{
+			Text:         networkButtonLabel(network),
+			CallbackData: "upgrade:network:" + string(network),
+		}})
+	}
+	rows = append(rows, []tgInlineKeyboardButton{{Text: "Home", CallbackData: "nav:home"}})
+	return b.sendOrEdit(ctx, chatID, messageID, strings.Join(lines, "\n"), b.reqstKeyboard(rows))
 }
 
 func (b *BotWorker) notificationKeyboard(raw json.RawMessage) *tgInlineKeyboardMarkup {
@@ -550,7 +635,18 @@ func (b *BotWorker) reqstKeyboard(rows [][]tgInlineKeyboardButton) *tgInlineKeyb
 }
 
 func (b *BotWorker) walletAddressPrompt(network store.Network) string {
-	return fmt.Sprintf("Set %s wallet\n\nSend the wallet address in your next message.", network)
+	switch network {
+	case store.NetworkEVM:
+		return "Set shared EVM wallet\n\nThis address is reused for Ethereum, Base, Arbitrum and BSC. Send the wallet address in your next message."
+	case store.NetworkSOLANA:
+		return "Set Solana wallet\n\nThis address will receive Solana stablecoin invoices. Send the wallet address in your next message."
+	default:
+		return fmt.Sprintf("Set %s wallet\n\nSend the wallet address in your next message.", network)
+	}
+}
+
+func (b *BotWorker) invoiceNetworkPrompt(draft botInvoiceDraft) string {
+	return fmt.Sprintf("New invoice\n\nWallet: %s\n\nChoose which network should be used for this invoice.", draft.WalletLabel)
 }
 
 func (b *BotWorker) invoiceTitlePrompt(draft botInvoiceDraft) string {
@@ -727,23 +823,7 @@ func shortAddress(address string) string {
 }
 
 func validateWallet(network store.Network, address string) error {
-	switch network {
-	case store.NetworkTON:
-		if len(address) < 32 {
-			return fmt.Errorf("TON address looks too short")
-		}
-	case store.NetworkTRON:
-		if !strings.HasPrefix(address, "T") || len(address) < 20 {
-			return fmt.Errorf("TRON address looks invalid")
-		}
-	case store.NetworkEVM:
-		if !strings.HasPrefix(strings.ToLower(address), "0x") || len(address) != 42 {
-			return fmt.Errorf("EVM address looks invalid")
-		}
-	default:
-		return fmt.Errorf("unsupported network")
-	}
-	return nil
+	return store.ValidateWalletAddress(network, address)
 }
 
 func valueOrFallback(value string, fallback string) string {
@@ -751,4 +831,34 @@ func valueOrFallback(value string, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func payableNetworksForWallet(network store.Network) []store.Network {
+	switch network {
+	case store.NetworkEVM:
+		return []store.Network{store.NetworkBASE, store.NetworkARBITRUM, store.NetworkBSC, store.NetworkEVM}
+	case store.NetworkSOLANA:
+		return []store.Network{store.NetworkSOLANA}
+	default:
+		return []store.Network{network}
+	}
+}
+
+func networkButtonLabel(network store.Network) string {
+	switch network {
+	case store.NetworkTRON:
+		return "TRON / USDT"
+	case store.NetworkSOLANA:
+		return "SOLANA / USDC-USDT"
+	case store.NetworkEVM:
+		return "EVM shared"
+	case store.NetworkBASE:
+		return "BASE / USDT"
+	case store.NetworkARBITRUM:
+		return "ARBITRUM / USDT"
+	case store.NetworkBSC:
+		return "BSC / USDT"
+	default:
+		return string(network)
+	}
 }

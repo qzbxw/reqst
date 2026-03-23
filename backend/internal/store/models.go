@@ -2,6 +2,8 @@ package store
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -10,12 +12,78 @@ import (
 type Network string
 
 const (
-	NetworkTON  Network = "TON"
-	NetworkTRON Network = "TRON"
-	NetworkEVM  Network = "EVM"
+	NetworkTON      Network = "TON"
+	NetworkTRON     Network = "TRON"
+	NetworkSOLANA   Network = "SOLANA"
+	NetworkEVM      Network = "EVM"
+	NetworkBASE     Network = "BASE"
+	NetworkARBITRUM Network = "ARBITRUM"
+	NetworkBSC      Network = "BSC"
 )
 
+func (n Network) WalletBucket() Network {
+	switch n {
+	case NetworkBASE, NetworkARBITRUM, NetworkBSC, NetworkEVM:
+		return NetworkEVM
+	case NetworkSOLANA:
+		return NetworkSOLANA
+	default:
+		return n
+	}
+}
+
+func (n Network) IsSupportedWalletNetwork() bool {
+	switch n {
+	case NetworkTON, NetworkTRON, NetworkSOLANA, NetworkEVM:
+		return true
+	default:
+		return false
+	}
+}
+
+func (n Network) IsSupportedPayableNetwork() bool {
+	switch n {
+	case NetworkTON, NetworkTRON, NetworkSOLANA, NetworkEVM, NetworkBASE, NetworkARBITRUM, NetworkBSC:
+		return true
+	default:
+		return false
+	}
+}
+
+func ValidateWalletAddress(network Network, address string) error {
+	address = strings.TrimSpace(address)
+	switch network {
+	case NetworkTON:
+		if len(address) < 32 {
+			return fmt.Errorf("TON address looks too short")
+		}
+	case NetworkTRON:
+		if !strings.HasPrefix(address, "T") || len(address) < 20 {
+			return fmt.Errorf("TRON address looks invalid")
+		}
+	case NetworkEVM:
+		if !strings.HasPrefix(strings.ToLower(address), "0x") || len(address) != 42 {
+			return fmt.Errorf("EVM address looks invalid")
+		}
+	case NetworkSOLANA:
+		if len(address) < 32 || len(address) > 44 {
+			return fmt.Errorf("Solana address looks invalid")
+		}
+		const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+		for _, char := range address {
+			if !strings.ContainsRune(alphabet, char) {
+				return fmt.Errorf("Solana address looks invalid")
+			}
+		}
+	default:
+		return fmt.Errorf("unsupported network")
+	}
+	return nil
+}
+
 type InvoiceStatus string
+
+type InvoiceKind string
 
 const (
 	InvoiceStatusDraft           InvoiceStatus = "draft"
@@ -24,6 +92,11 @@ const (
 	InvoiceStatusExpired         InvoiceStatus = "expired"
 	InvoiceStatusUnderpaid       InvoiceStatus = "underpaid"
 	InvoiceStatusManualReview    InvoiceStatus = "manual_review"
+)
+
+const (
+	InvoiceKindMerchant     InvoiceKind = "merchant"
+	InvoiceKindSubscription InvoiceKind = "subscription"
 )
 
 type Seller struct {
@@ -54,6 +127,8 @@ type Invoice struct {
 	ID                 int64            `json:"id"`
 	PublicID           string           `json:"public_id"`
 	SellerID           int64            `json:"seller_id"`
+	Kind               InvoiceKind      `json:"kind"`
+	SubscriptionDays   int              `json:"subscription_days"`
 	Title              string           `json:"title"`
 	BaseAmountUSD      decimal.Decimal  `json:"base_amount_usd"`
 	PayableAmount      decimal.Decimal  `json:"payable_amount"`
@@ -97,8 +172,9 @@ type ObservedTransfer struct {
 }
 
 type WatchedWallet struct {
-	Network Network
-	Address string
+	PollNetwork    Network
+	PayableNetwork Network
+	Address        string
 }
 
 type NotificationJob struct {

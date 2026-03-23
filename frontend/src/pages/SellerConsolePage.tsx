@@ -3,6 +3,7 @@ import {
   authenticate,
   cancelInvoice,
   clearStoredToken,
+  createBillingCheckout,
   createInvoice,
   createWallet,
   deleteWallet,
@@ -39,10 +40,10 @@ type PanelKey = "overview" | "wallets" | "create" | "orders";
 
 const COPY = {
   ru: {
-    eyebrow: "Telegram Quote-to-Pay OS",
+    eyebrow: "Reqst",
     heroTitle: "reqst",
     heroCopy:
-      "Аккуратная консоль для выставления крипто-инвойсов, трекинга статусов и buyer checkout без custody и без Stars.",
+      "Инвойсы, статусы и оплата в одном месте. Без ручной сверки, лишних вкладок и хаоса в блокчейн-эксплорерах.",
     tabs: {
       overview: "Обзор",
       wallets: "Кошельки",
@@ -50,7 +51,7 @@ const COPY = {
       orders: "Инвойсы",
     },
     authTitle: "Вход продавца",
-    authCopy: "В проде вход идёт через Telegram Mini App initData. Для локалки оставлен dev fallback.",
+    authCopy: "Вход в консоль продавца.",
     telegramId: "Telegram ID",
     username: "Username",
     signIn: "Войти",
@@ -59,9 +60,16 @@ const COPY = {
     plan: "План",
     wallets: "Кошельки",
     invoices: "Инвойсы",
-    activeWallets: "Активные receiving addresses",
+    activeWallets: "Активные адреса",
     totalInvoices: "Всего создано",
-    trialLeft: "Осталось trial-инвойсов",
+    trialLeft: "Осталось инвойсов",
+    unlockPro: "Reqst PRO",
+    unlockCopy: "Когда бесплатные инвойсы закончатся, новые ссылки остановятся. Без комиссии с оборота, только фиксированный доступ.",
+    unlockPrice: "39 USDT / 30 дней",
+    billingNetwork: "Сеть оплаты",
+    unlockNow: "Оплатить PRO",
+    paywallTitle: "Триал закончился",
+    paywallBody: "Новые инвойсы остановлены. Оплати PRO и сразу верни безлимит на 30 дней.",
     recentInvoice: "Последний инвойс",
     noRecentInvoice: "Пока ещё нет ни одного инвойса.",
     freshLink: "Свежая ссылка",
@@ -72,24 +80,24 @@ const COPY = {
     theme: { light: "Свет", dark: "Тьма" },
     language: { ru: "РУ", en: "EN" },
     walletTitle: "Кошельки",
-    walletCopy: "Один активный адрес на сеть. Ниже можно быстро переключаться и отключать адреса.",
+    walletCopy: "Один активный адрес на каждую платёжную группу. Общий EVM-адрес используется для Ethereum, Base, Arbitrum и BSC.",
     network: "Сеть",
     address: "Адрес",
     saveWallet: "Сохранить кошелёк",
     noWallets: "Пока нет активных кошельков.",
     disable: "Отключить",
     createTitle: "Новый инвойс",
-    createCopy: "Система сама рассчитает payable amount, суффикс или TON comment и соберёт buyer checkout.",
+    createCopy: "Reqst сам рассчитает сумму к оплате, комментарий для TON или уникальный хвост для стейблов.",
     serviceTitle: "Название услуги",
     amountUsd: "Сумма, USD",
     lifetime: "Время жизни, минут",
     generate: "Сгенерировать инвойс",
-    matchingTitle: "Как матчим оплату",
-    matchingTon: "TON: comment + адрес продавца",
-    matchingUsdt: "USDT: точная сумма с уникальным suffix",
-    matchingLate: "Опоздавшая оплата уходит в manual review",
+    matchingTitle: "Как находится платёж",
+    matchingTon: "TON: комментарий плюс адрес продавца",
+    matchingUsdt: "USDT / USDC: точная сумма с уникальным хвостом",
+    matchingLate: "Опоздавшая оплата уходит на ручную проверку",
     ordersTitle: "Инвойсы",
-    ordersCopy: "Здесь можно быстро копировать checkout-ссылки и закрывать исключения вручную.",
+    ordersCopy: "Здесь можно быстро открыть ссылку, скопировать её и закрыть нестандартные случаи вручную.",
     emptyOrders: "Инвойсов пока нет.",
     publicId: "Public ID",
     expires: "Истекает",
@@ -100,10 +108,10 @@ const COPY = {
     markPaid: "Подтвердить",
   },
   en: {
-    eyebrow: "Telegram Quote-to-Pay OS",
+    eyebrow: "Reqst",
     heroTitle: "reqst",
     heroCopy:
-      "A cleaner solo-seller console for crypto invoices, status tracking and buyer checkout without custody or Telegram Stars.",
+      "Invoices, payment status and checkout in one place. No manual matching, no extra tabs, no explorer chaos.",
     tabs: {
       overview: "Overview",
       wallets: "Wallets",
@@ -111,7 +119,7 @@ const COPY = {
       orders: "Invoices",
     },
     authTitle: "Seller Sign-In",
-    authCopy: "Production uses Telegram Mini App initData. Local development keeps a fallback auth form.",
+    authCopy: "Sign in to the seller console.",
     telegramId: "Telegram ID",
     username: "Username",
     signIn: "Enter console",
@@ -120,9 +128,16 @@ const COPY = {
     plan: "Plan",
     wallets: "Wallets",
     invoices: "Invoices",
-    activeWallets: "Active receiving addresses",
+    activeWallets: "Active addresses",
     totalInvoices: "Total created",
-    trialLeft: "Trial invoices left",
+    trialLeft: "Invoices left",
+    unlockPro: "Reqst PRO",
+    unlockCopy: "When the free invoices run out, new links stop. No revenue fee, just a fixed plan.",
+    unlockPrice: "39 USDT / 30 days",
+    billingNetwork: "Payment network",
+    unlockNow: "Pay for PRO",
+    paywallTitle: "Trial is over",
+    paywallBody: "New invoices are paused. Pay for PRO and restore unlimited access for 30 days.",
     recentInvoice: "Latest invoice",
     noRecentInvoice: "No invoices yet.",
     freshLink: "Fresh link",
@@ -133,24 +148,24 @@ const COPY = {
     theme: { light: "Light", dark: "Dark" },
     language: { ru: "RU", en: "EN" },
     walletTitle: "Wallets",
-    walletCopy: "One active public address per network. Manage them here without scrolling through the whole page.",
+    walletCopy: "One active address per payout group. The shared EVM address is reused for Ethereum, Base, Arbitrum and BSC.",
     network: "Network",
     address: "Address",
     saveWallet: "Save wallet",
     noWallets: "No active wallets yet.",
     disable: "Disable",
     createTitle: "New invoice",
-    createCopy: "The system calculates the payable amount, suffix or TON comment and assembles the checkout page.",
+    createCopy: "Reqst calculates the payable amount, the TON comment, or the unique stablecoin suffix for you.",
     serviceTitle: "Service title",
     amountUsd: "Amount, USD",
     lifetime: "Lifetime, minutes",
     generate: "Generate invoice",
-    matchingTitle: "Matching logic",
-    matchingTon: "TON: seller address + comment",
-    matchingUsdt: "USDT: exact payable amount with a unique suffix",
-    matchingLate: "Late payments move into manual review",
+    matchingTitle: "How payment matching works",
+    matchingTon: "TON: seller address plus comment",
+    matchingUsdt: "USDT / USDC: exact amount with a unique suffix",
+    matchingLate: "Late payments move to manual review",
     ordersTitle: "Invoices",
-    ordersCopy: "Copy checkout links fast and resolve exceptions without hunting through the page.",
+    ordersCopy: "Open links quickly, copy them, and resolve edge cases without digging through the page.",
     emptyOrders: "No invoices yet.",
     publicId: "Public ID",
     expires: "Expires",
@@ -183,8 +198,31 @@ const STATUS_LABELS = {
 
 const PANEL_ORDER: PanelKey[] = ["overview", "wallets", "create", "orders"];
 
+const WALLET_NETWORK_OPTIONS: Array<{ value: Network; label: string }> = [
+  { value: "TON", label: "TON" },
+  { value: "TRON", label: "TRON / USDT" },
+  { value: "SOLANA", label: "SOLANA / USDC-USDT" },
+  { value: "EVM", label: "EVM shared / ETH-Base-Arbitrum-BSC" },
+];
+
+const PAYABLE_NETWORK_OPTIONS: Array<{ value: Network; label: string }> = [
+  { value: "TON", label: "TON" },
+  { value: "TRON", label: "TRON / USDT" },
+  { value: "SOLANA", label: "SOLANA / USDC-USDT" },
+  { value: "BASE", label: "BASE / USDT" },
+  { value: "ARBITRUM", label: "ARBITRUM / USDT" },
+  { value: "BSC", label: "BSC / USDT" },
+  { value: "EVM", label: "ETHEREUM / ERC20" },
+];
+
 function formatInvoiceStatus(language: keyof typeof STATUS_LABELS, status: string) {
   return STATUS_LABELS[language][status as keyof (typeof STATUS_LABELS)[typeof language]] ?? status.replaceAll("_", " ");
+}
+
+function formatNetworkLabel(network: Network) {
+  return PAYABLE_NETWORK_OPTIONS.find((option) => option.value === network)?.label
+    ?? WALLET_NETWORK_OPTIONS.find((option) => option.value === network)?.label
+    ?? network;
 }
 
 export function SellerConsolePage() {
@@ -203,6 +241,7 @@ export function SellerConsolePage() {
     payableNetwork: "TON" as Network,
     expiresInMinutes: 30,
   });
+  const [billingNetwork, setBillingNetwork] = useState<Network>("TRON");
 
   useEffect(() => {
     window.Telegram?.WebApp?.ready?.();
@@ -271,7 +310,11 @@ export function SellerConsolePage() {
       await refresh();
       setActivePanel("wallets");
     } catch (err) {
-      setError((err as Error).message);
+      const message = (err as Error).message;
+      setError(message);
+      if (message.toLowerCase().includes("trial limit reached")) {
+        setActivePanel("create");
+      }
     }
   }
 
@@ -286,6 +329,22 @@ export function SellerConsolePage() {
         base_amount_usd: invoiceForm.baseAmountUSD,
         payable_network: invoiceForm.payableNetwork,
         expires_in_minutes: invoiceForm.expiresInMinutes,
+      });
+      setFreshLink(`${window.location.origin}/checkout/${invoice.public_id}`);
+      await refresh();
+      setActivePanel("orders");
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  async function handleCreateBilling(network = billingNetwork) {
+    if (!session) {
+      return;
+    }
+    try {
+      const invoice = await createBillingCheckout(session.token, {
+        payable_network: network,
       });
       setFreshLink(`${window.location.origin}/checkout/${invoice.public_id}`);
       await refresh();
@@ -332,6 +391,7 @@ export function SellerConsolePage() {
 
   const checkoutOrigin = useMemo(() => window.location.origin, []);
   const latestInvoice = session?.invoices[0] ?? null;
+  const trialEnded = Boolean(session && !session.me.plan.is_pro && session.me.plan.trial_remaining <= 0);
   const sellerHandle = session ? `@${session.me.seller.username || String(session.me.seller.telegram_id)}` : "";
   const heroLink = freshLink || (latestInvoice ? `${checkoutOrigin}/checkout/${latestInvoice.public_id}` : "");
   const heroLinkLabel = freshLink ? text.freshLink : text.recentInvoice;
@@ -434,6 +494,7 @@ export function SellerConsolePage() {
                 <article className="console-mini-card">
                   <span>{text.plan}</span>
                   <strong>{session.me.plan.name}</strong>
+                  {!session.me.plan.is_pro ? <p>{text.trialLeft}: {session.me.plan.trial_remaining}</p> : null}
                 </article>
                 <article className="console-mini-card">
                   <span>{text.wallets}</span>
@@ -444,6 +505,26 @@ export function SellerConsolePage() {
                   <strong>{session.invoices.length}</strong>
                 </article>
               </div>
+
+              {!session.me.plan.is_pro ? (
+                <div className="console-link-card console-link-card--billing">
+                  <span>{text.unlockPro}</span>
+                  <strong>{text.unlockPrice}</strong>
+                  <p>{trialEnded ? text.paywallBody : text.unlockCopy}</p>
+                  <div className="console-link-actions console-link-actions--billing">
+                    <select value={billingNetwork} onChange={(event) => setBillingNetwork(event.target.value as Network)} aria-label={text.billingNetwork}>
+                      {PAYABLE_NETWORK_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="button" className="ghost-button compact-button" onClick={() => void handleCreateBilling()}>
+                      {text.unlockNow}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </section>
 
@@ -505,7 +586,7 @@ export function SellerConsolePage() {
                         <span className={`status-pill status-${latestInvoice.status}`}>{formatInvoiceStatus(language, latestInvoice.status)}</span>
                         <div className="invoice-amount">
                           <strong>{latestInvoice.payable_amount}</strong>
-                          <span>{latestInvoice.payable_network}</span>
+                          <span>{formatNetworkLabel(latestInvoice.payable_network)}</span>
                         </div>
                       </div>
                       <h3>{latestInvoice.title}</h3>
@@ -550,9 +631,11 @@ export function SellerConsolePage() {
                   <label>
                     {text.network}
                     <select value={walletForm.network} onChange={(event) => setWalletForm((current) => ({ ...current, network: event.target.value as Network }))}>
-                      <option value="TON">TON</option>
-                      <option value="TRON">TRON / USDT</option>
-                      <option value="EVM">EVM / USDT</option>
+                      {WALLET_NETWORK_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
                     </select>
                   </label>
                   <label>
@@ -566,7 +649,7 @@ export function SellerConsolePage() {
                   {session.wallets.map((wallet) => (
                     <div key={wallet.id} className="stack-item stack-item--console">
                       <div className="console-wallet-copy">
-                        <span>{wallet.network}</span>
+                        <span>{formatNetworkLabel(wallet.network)}</span>
                         <strong>{wallet.address}</strong>
                       </div>
                       <button type="button" className="ghost-button compact-button" onClick={() => void handleDeleteWallet(wallet.id)}>
@@ -589,29 +672,51 @@ export function SellerConsolePage() {
                     <p>{text.createCopy}</p>
                   </div>
                 </div>
-                <form onSubmit={handleCreateInvoice} className="form-grid console-form-grid">
-                  <label>
-                    {text.serviceTitle}
-                    <input placeholder={language === "ru" ? "Например, Design sprint" : "For example, Design sprint"} value={invoiceForm.title} onChange={(event) => setInvoiceForm((current) => ({ ...current, title: event.target.value }))} />
-                  </label>
-                  <label>
-                    {text.amountUsd}
-                    <input value={invoiceForm.baseAmountUSD} onChange={(event) => setInvoiceForm((current) => ({ ...current, baseAmountUSD: event.target.value }))} />
-                  </label>
-                  <label>
-                    {text.network}
-                    <select value={invoiceForm.payableNetwork} onChange={(event) => setInvoiceForm((current) => ({ ...current, payableNetwork: event.target.value as Network }))}>
-                      <option value="TON">TON</option>
-                      <option value="TRON">TRON / USDT</option>
-                      <option value="EVM">EVM / USDT</option>
-                    </select>
-                  </label>
-                  <label>
-                    {text.lifetime}
-                    <input type="number" min={5} max={1440} value={invoiceForm.expiresInMinutes} onChange={(event) => setInvoiceForm((current) => ({ ...current, expiresInMinutes: Number(event.target.value) }))} />
-                  </label>
-                  <button type="submit">{text.generate}</button>
-                </form>
+                {trialEnded ? (
+                  <div className="console-paywall">
+                    <h3>{text.paywallTitle}</h3>
+                    <p>{text.paywallBody}</p>
+                    <label>
+                      {text.billingNetwork}
+                      <select value={billingNetwork} onChange={(event) => setBillingNetwork(event.target.value as Network)}>
+                        {PAYABLE_NETWORK_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <button type="button" onClick={() => void handleCreateBilling()}>
+                      {text.unlockNow} · {text.unlockPrice}
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleCreateInvoice} className="form-grid console-form-grid">
+                    <label>
+                      {text.serviceTitle}
+                      <input placeholder={language === "ru" ? "Например, Design sprint" : "For example, Design sprint"} value={invoiceForm.title} onChange={(event) => setInvoiceForm((current) => ({ ...current, title: event.target.value }))} />
+                    </label>
+                    <label>
+                      {text.amountUsd}
+                      <input value={invoiceForm.baseAmountUSD} onChange={(event) => setInvoiceForm((current) => ({ ...current, baseAmountUSD: event.target.value }))} />
+                    </label>
+                    <label>
+                      {text.network}
+                      <select value={invoiceForm.payableNetwork} onChange={(event) => setInvoiceForm((current) => ({ ...current, payableNetwork: event.target.value as Network }))}>
+                        {PAYABLE_NETWORK_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      {text.lifetime}
+                      <input type="number" min={5} max={1440} value={invoiceForm.expiresInMinutes} onChange={(event) => setInvoiceForm((current) => ({ ...current, expiresInMinutes: Number(event.target.value) }))} />
+                    </label>
+                    <button type="submit">{text.generate}</button>
+                  </form>
+                )}
               </article>
 
               <aside className="console-surface console-note-card">
@@ -651,7 +756,7 @@ export function SellerConsolePage() {
                           </div>
                           <div className="invoice-amount">
                             <strong>{invoice.payable_amount}</strong>
-                            <span>{invoice.payable_network}</span>
+                            <span>{formatNetworkLabel(invoice.payable_network)}</span>
                           </div>
                         </div>
 

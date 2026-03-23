@@ -1,4 +1,4 @@
-export type Network = "TON" | "TRON" | "EVM";
+export type Network = "TON" | "TRON" | "SOLANA" | "EVM" | "BASE" | "ARBITRUM" | "BSC";
 
 export type Seller = {
   id: number;
@@ -23,6 +23,8 @@ export type Wallet = {
 export type Invoice = {
   id: number;
   public_id: string;
+  kind?: "merchant" | "subscription";
+  subscription_days?: number;
   title: string;
   base_amount_usd: string;
   payable_amount: string;
@@ -43,6 +45,8 @@ export type MeResponse = {
     is_pro: boolean;
     trial_limit: number;
     trial_remaining: number;
+    price_usd: string;
+    billing_days: number;
   };
 };
 

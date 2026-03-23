@@ -52,6 +52,11 @@ func NewServer(cfg config.Config, st *store.Store, authService *service.AuthServ
 	internal.Use(server.internalTokenMiddleware())
 	internal.POST("/watchers/tron", server.handleObservedTransfers)
 	internal.POST("/watchers/ton", server.handleObservedTransfers)
+	internal.POST("/watchers/solana", server.handleObservedTransfers)
+	internal.POST("/watchers/evm", server.handleObservedTransfers)
+	internal.POST("/watchers/base", server.handleObservedTransfers)
+	internal.POST("/watchers/arbitrum", server.handleObservedTransfers)
+	internal.POST("/watchers/bsc", server.handleObservedTransfers)
 	internal.POST("/admin/sellers/:id/grant-pro", server.handleGrantPRO)
 	internal.POST("/admin/sellers/:id/block", server.handleBlockSeller)
 
@@ -61,6 +66,7 @@ func NewServer(cfg config.Config, st *store.Store, authService *service.AuthServ
 	api.GET("/wallets", server.handleListWallets)
 	api.POST("/wallets", server.handleCreateWallet)
 	api.DELETE("/wallets/:id", server.handleDeleteWallet)
+	api.POST("/billing/checkout", server.handleCreateBillingCheckout)
 	api.GET("/invoices", server.handleListInvoices)
 	api.POST("/invoices", server.handleCreateInvoice)
 	api.GET("/invoices/:id", server.handleGetInvoice)
@@ -95,8 +101,10 @@ func (s *Server) handleMe(c *gin.Context) {
 		"plan": map[string]any{
 			"name":            ternary(sc.Seller.IsPRO(now), "PRO", "Trial"),
 			"is_pro":          sc.Seller.IsPRO(now),
-			"trial_limit":     15,
-			"trial_remaining": max(0, 15-sc.Seller.FreeInvoicesUsed),
+			"trial_limit":     service.TrialInvoiceLimit,
+			"trial_remaining": max(0, service.TrialInvoiceLimit-sc.Seller.FreeInvoicesUsed),
+			"price_usd":       "39",
+			"billing_days":    service.ProPlanDays,
 		},
 	})
 }
@@ -124,6 +132,10 @@ func (s *Server) handleCreateWallet(c *gin.Context) {
 
 	network := store.Network(strings.ToUpper(strings.TrimSpace(body.Network)))
 	address := strings.TrimSpace(body.Address)
+	if !network.IsSupportedWalletNetwork() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unsupported wallet network"})
+		return
+	}
 	if err := validateWallet(network, address); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -316,11 +328,7 @@ func (s *Server) handleObservedTransfers(c *gin.Context) {
 			RawPayload:         raw,
 		}
 		if transfer.Network == "" {
-			if strings.Contains(c.FullPath(), "/ton") {
-				transfer.Network = store.NetworkTON
-			} else {
-				transfer.Network = store.NetworkTRON
-			}
+			transfer.Network = inferredNetworkFromPath(c.FullPath())
 		}
 		if err := service.NormalizeObservedTransfer(&transfer); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -459,6 +467,8 @@ func publicInvoiceResponse(invoice store.Invoice) gin.H {
 		"id":                  invoice.ID,
 		"public_id":           invoice.PublicID,
 		"title":               invoice.Title,
+		"kind":                invoice.Kind,
+		"subscription_days":   invoice.SubscriptionDays,
 		"base_amount_usd":     invoice.BaseAmountUSD.StringFixed(2),
 		"payable_amount":      invoice.PayableAmount.StringFixed(payableScale(invoice.PayableNetwork)),
 		"payable_network":     invoice.PayableNetwork,
@@ -472,6 +482,25 @@ func publicInvoiceResponse(invoice store.Invoice) gin.H {
 	}
 }
 
+func (s *Server) handleCreateBillingCheckout(c *gin.Context) {
+	sc := sellerFromContext(c)
+	var body struct {
+		PayableNetwork string `json:"payable_network"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	network := store.Network(strings.ToUpper(strings.TrimSpace(body.PayableNetwork)))
+	invoice, err := s.invoiceService.CreateSubscriptionInvoice(c.Request.Context(), sc.Seller, network)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, publicInvoiceResponse(invoice))
+}
+
 func paymentURI(invoice store.Invoice) string {
 	switch invoice.PayableNetwork {
 	case store.NetworkTON:
@@ -480,7 +509,7 @@ func paymentURI(invoice store.Invoice) string {
 			comment = *invoice.PaymentComment
 		}
 		return "ton://transfer/" + invoice.DestinationAddress + "?amount=" + invoice.PayableAmount.Mul(decimal.NewFromInt(1_000_000_000)).StringFixed(0) + "&text=" + url.QueryEscape(comment)
-	case store.NetworkTRON, store.NetworkEVM:
+	case store.NetworkTRON, store.NetworkSOLANA, store.NetworkEVM, store.NetworkBASE, store.NetworkARBITRUM, store.NetworkBSC:
 		return invoice.DestinationAddress
 	default:
 		return invoice.DestinationAddress
@@ -488,23 +517,7 @@ func paymentURI(invoice store.Invoice) string {
 }
 
 func validateWallet(network store.Network, address string) error {
-	switch network {
-	case store.NetworkTON:
-		if len(address) < 32 {
-			return errors.New("TON address looks too short")
-		}
-	case store.NetworkTRON:
-		if !strings.HasPrefix(address, "T") || len(address) < 20 {
-			return errors.New("TRON address looks invalid")
-		}
-	case store.NetworkEVM:
-		if !strings.HasPrefix(strings.ToLower(address), "0x") || len(address) != 42 {
-			return errors.New("EVM address looks invalid")
-		}
-	default:
-		return errors.New("unsupported network")
-	}
-	return nil
+	return store.ValidateWalletAddress(network, address)
 }
 
 func corsMiddleware() gin.HandlerFunc {
@@ -547,4 +560,25 @@ func payableScale(network store.Network) int32 {
 		return 6
 	}
 	return 6
+}
+
+func inferredNetworkFromPath(path string) store.Network {
+	switch {
+	case strings.Contains(path, "/watchers/ton"):
+		return store.NetworkTON
+	case strings.Contains(path, "/watchers/tron"):
+		return store.NetworkTRON
+	case strings.Contains(path, "/watchers/solana"):
+		return store.NetworkSOLANA
+	case strings.Contains(path, "/watchers/base"):
+		return store.NetworkBASE
+	case strings.Contains(path, "/watchers/arbitrum"):
+		return store.NetworkARBITRUM
+	case strings.Contains(path, "/watchers/bsc"):
+		return store.NetworkBSC
+	case strings.Contains(path, "/watchers/evm"):
+		return store.NetworkEVM
+	default:
+		return ""
+	}
 }

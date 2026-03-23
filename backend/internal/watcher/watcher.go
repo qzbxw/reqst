@@ -72,8 +72,8 @@ func (w *Watcher) tick(ctx context.Context) error {
 
 	for _, wallet := range wallets {
 		var transfers []store.ObservedTransfer
-		switch wallet.Network {
-		case store.NetworkTRON, store.NetworkEVM:
+		switch wallet.PollNetwork {
+		case store.NetworkTRON:
 			transfers, err = w.pollTRC20(ctx, wallet)
 		case store.NetworkTON:
 			transfers, err = w.pollTON(ctx, wallet)
@@ -81,7 +81,7 @@ func (w *Watcher) tick(ctx context.Context) error {
 			continue
 		}
 		if err != nil {
-			w.logger.Warn("wallet poll failed", "network", wallet.Network, "address", wallet.Address, "error", err)
+			w.logger.Warn("wallet poll failed", "network", wallet.PayableNetwork, "address", wallet.Address, "error", err)
 			continue
 		}
 
@@ -157,7 +157,7 @@ func (w *Watcher) pollTRC20(ctx context.Context, wallet store.WatchedWallet) ([]
 		raw, _ := json.Marshal(item)
 		transfer := store.ObservedTransfer{
 			TxHash:             item.TransactionID,
-			Network:            wallet.Network,
+			Network:            wallet.PayableNetwork,
 			DestinationAddress: item.To,
 			Amount:             amount,
 			ObservedAt:         time.UnixMilli(item.BlockTime).UTC(),
@@ -221,7 +221,7 @@ func (w *Watcher) pollTON(ctx context.Context, wallet store.WatchedWallet) ([]st
 
 		transfer := store.ObservedTransfer{
 			TxHash:             item.TxID.Hash,
-			Network:            store.NetworkTON,
+			Network:            wallet.PayableNetwork,
 			DestinationAddress: wallet.Address,
 			Amount:             amount,
 			PaymentComment:     strings.TrimSpace(item.InMsg.Message),

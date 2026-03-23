@@ -17,7 +17,19 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-const trialInvoiceLimit = 15
+const (
+	TrialInvoiceLimit = 15
+	ProPlanDays       = 30
+)
+
+var proPlanPriceUSD = decimal.RequireFromString("39")
+
+var reqstBillingWallets = map[store.Network]string{
+	store.NetworkTON:    "UQBuzCySn6dYEHzKoGzUPmclj9Dg_m1dA-mzeDEvuF3F9x6P",
+	store.NetworkTRON:   "TYNY19wFMM24dJN4ciyuGZDNzzQHVcaMPd",
+	store.NetworkSOLANA: "FuJjhzKnFePteS35Ehyc6LHXYnax1G8TsJa1c1goem5V",
+	store.NetworkEVM:    "0x117cd2295ba0f280a2fdb757157c33ef049d34af",
+}
 
 type InvoiceService struct {
 	store      *store.Store
@@ -59,9 +71,12 @@ func (s *InvoiceService) CreateInvoice(ctx context.Context, seller store.Seller,
 	if input.PayableNetwork == "" {
 		input.PayableNetwork = seller.DefaultNetwork
 	}
+	if !input.PayableNetwork.IsSupportedPayableNetwork() {
+		return store.Invoice{}, fmt.Errorf("unsupported network %s", input.PayableNetwork)
+	}
 
-	if !seller.IsPRO(time.Now()) && seller.FreeInvoicesUsed >= trialInvoiceLimit {
-		return store.Invoice{}, fmt.Errorf("trial limit reached: %d invoices", trialInvoiceLimit)
+	if !seller.IsPRO(time.Now()) && seller.FreeInvoicesUsed >= TrialInvoiceLimit {
+		return store.Invoice{}, fmt.Errorf("trial limit reached: %d invoices. Unlock PRO for 30 days at 39 USDT.", TrialInvoiceLimit)
 	}
 
 	var (
@@ -73,14 +88,56 @@ func (s *InvoiceService) CreateInvoice(ctx context.Context, seller store.Seller,
 		if err != nil {
 			return store.Invoice{}, fmt.Errorf("selected wallet %d: %w", input.WalletID, err)
 		}
-		input.PayableNetwork = wallet.Network
+		if input.PayableNetwork == "" {
+			input.PayableNetwork = wallet.Network
+		}
+		if wallet.Network != input.PayableNetwork.WalletBucket() {
+			return store.Invoice{}, fmt.Errorf("wallet %d does not support network %s", wallet.ID, input.PayableNetwork)
+		}
 	} else {
-		wallet, err = s.store.GetActiveWalletForNetwork(ctx, seller.ID, input.PayableNetwork)
+		wallet, err = s.store.GetActiveWalletForNetwork(ctx, seller.ID, input.PayableNetwork.WalletBucket())
 		if err != nil {
 			return store.Invoice{}, fmt.Errorf("active wallet for network %s: %w", input.PayableNetwork, err)
 		}
 	}
 
+	return s.createInvoiceWithDestination(ctx, store.CreateInvoiceParams{
+		SellerID:           seller.ID,
+		Kind:               store.InvoiceKindMerchant,
+		SubscriptionDays:   0,
+		CountTowardsTrial:  true,
+		Title:              strings.TrimSpace(input.Title),
+		BaseAmountUSD:      input.BaseAmountUSD.Round(6),
+		PayableNetwork:     input.PayableNetwork,
+		DestinationAddress: wallet.Address,
+	}, input.ExpiresInMinutes)
+}
+
+func (s *InvoiceService) CreateSubscriptionInvoice(ctx context.Context, seller store.Seller, network store.Network) (store.Invoice, error) {
+	if seller.IsBlocked {
+		return store.Invoice{}, errors.New("seller account is blocked")
+	}
+	if !network.IsSupportedPayableNetwork() {
+		return store.Invoice{}, fmt.Errorf("unsupported network %s", network)
+	}
+	address, ok := reqstBillingWallets[network.WalletBucket()]
+	if !ok || strings.TrimSpace(address) == "" {
+		return store.Invoice{}, fmt.Errorf("billing wallet is not configured for network %s", network)
+	}
+
+	return s.createInvoiceWithDestination(ctx, store.CreateInvoiceParams{
+		SellerID:           seller.ID,
+		Kind:               store.InvoiceKindSubscription,
+		SubscriptionDays:   ProPlanDays,
+		CountTowardsTrial:  false,
+		Title:              "Reqst PRO · 30 days",
+		BaseAmountUSD:      proPlanPriceUSD,
+		PayableNetwork:     network,
+		DestinationAddress: address,
+	}, 60)
+}
+
+func (s *InvoiceService) createInvoiceWithDestination(ctx context.Context, params store.CreateInvoiceParams, expiresInMinutes int) (store.Invoice, error) {
 	publicID, err := s.generateUniquePublicID(ctx)
 	if err != nil {
 		return store.Invoice{}, err
@@ -90,38 +147,37 @@ func (s *InvoiceService) CreateInvoice(ctx context.Context, seller store.Seller,
 	var paymentComment *string
 	var matchingSuffix *decimal.Decimal
 
-	switch input.PayableNetwork {
+	switch params.PayableNetwork {
 	case store.NetworkTON:
-		payableAmount, err = s.calculateTONAmount(ctx, input.BaseAmountUSD)
+		payableAmount, err = s.calculateTONAmount(ctx, params.BaseAmountUSD)
 		if err != nil {
 			return store.Invoice{}, err
 		}
 		comment := "REQST-" + publicID
 		paymentComment = &comment
-	case store.NetworkTRON, store.NetworkEVM:
-		suffix, err := s.generateUniqueSuffix(ctx, wallet.Address, input.PayableNetwork)
+	case store.NetworkTRON, store.NetworkSOLANA, store.NetworkEVM, store.NetworkBASE, store.NetworkARBITRUM, store.NetworkBSC:
+		suffix, err := s.generateUniqueSuffix(ctx, params.DestinationAddress, params.PayableNetwork)
 		if err != nil {
 			return store.Invoice{}, err
 		}
-		payableAmount = input.BaseAmountUSD.Add(suffix).Round(6)
+		payableAmount = params.BaseAmountUSD.Add(suffix).Round(6)
 		matchingSuffix = &suffix
 	default:
-		return store.Invoice{}, fmt.Errorf("unsupported network %s", input.PayableNetwork)
+		return store.Invoice{}, fmt.Errorf("unsupported network %s", params.PayableNetwork)
 	}
 
-	expiresAt := time.Now().UTC().Add(time.Duration(input.ExpiresInMinutes) * time.Minute)
-	return s.store.CreateInvoice(ctx, store.CreateInvoiceParams{
-		PublicID:           publicID,
-		SellerID:           seller.ID,
-		Title:              strings.TrimSpace(input.Title),
-		BaseAmountUSD:      input.BaseAmountUSD.Round(6),
-		PayableAmount:      payableAmount,
-		PayableNetwork:     input.PayableNetwork,
-		DestinationAddress: wallet.Address,
-		PaymentComment:     paymentComment,
-		MatchingSuffix:     matchingSuffix,
-		ExpiresAt:          expiresAt,
-	})
+	if expiresInMinutes <= 0 {
+		expiresInMinutes = 30
+	}
+	params.PublicID = publicID
+	params.PayableAmount = payableAmount
+	params.PaymentComment = paymentComment
+	params.MatchingSuffix = matchingSuffix
+	params.ExpiresAt = time.Now().UTC().Add(time.Duration(expiresInMinutes) * time.Minute)
+	if params.Kind == "" {
+		params.Kind = store.InvoiceKindMerchant
+	}
+	return s.store.CreateInvoice(ctx, params)
 }
 
 func (s *InvoiceService) generateUniquePublicID(ctx context.Context) (string, error) {
