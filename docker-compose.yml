@@ -1,0 +1,76 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-reqst}
+      POSTGRES_USER: ${POSTGRES_USER:-reqst}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-reqst}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-reqst} -d ${POSTGRES_DB:-reqst}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      APP_RUNTIME: api
+      DATABASE_URL: ${DATABASE_URL:-postgres://reqst:reqst@postgres:5432/reqst?sslmode=disable}
+    ports:
+      - "${HTTP_PORT:-8080}:8080"
+
+  blockchain_watcher:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      APP_RUNTIME: watcher
+      DATABASE_URL: ${DATABASE_URL:-postgres://reqst:reqst@postgres:5432/reqst?sslmode=disable}
+
+  telegram_bot_worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      APP_RUNTIME: bot
+      DATABASE_URL: ${DATABASE_URL:-postgres://reqst:reqst@postgres:5432/reqst?sslmode=disable}
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "5173:80"
+
+volumes:
+  postgres_data:
