@@ -561,14 +561,14 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section id="faq" className="lend-split-section lend-reveal--1" ref={reveal}>
-          <div className="lend-section-copy" style={{ position: "sticky", top: "6.5rem", height: "fit-content" }}>
+        <section id="faq" className="lend-faq-section" ref={reveal}>
+          <div className="lend-section-copy lend-faq-copy lend-reveal--1">
             <span className="lend-section-kicker">{copy.faq.kicker}</span>
             <h2>{copy.faq.title}</h2>
             <p>{copy.faq.body}</p>
           </div>
 
-          <div className="lend-faq-stack">
+          <div className="lend-faq-stack lend-reveal--2">
             {copy.faq.items.map((item, index) => {
               const isOpen = index === openFaq;
               const answerId = `landing-faq-answer-${index}`;
@@ -581,8 +581,8 @@ export function LandingPage() {
                     aria-controls={answerId}
                     onClick={() => setOpenFaq(isOpen ? -1 : index)}
                   >
-                    <div style={{ display: "grid", gap: "0.4rem" }}>
-                      <span className="receipt-brandline" style={{ fontSize: "0.7rem" }}>PROTOCOL Q&A</span>
+                    <div className="lend-faq-trigger-copy">
+                      <span className="lend-faq-kicker">Protocol Q&A</span>
                       <span className="lend-faq-question-text">{item.question}</span>
                     </div>
                     <div className="lend-faq-icon">
