@@ -71,7 +71,6 @@ export function AuthPortalPage() {
     if (hasTelegramInitData || hasSession) return;
 
     const script = document.createElement("script");
-...
     script.src = "https://telegram.org/js/telegram-widget.js?22";
     script.setAttribute("data-telegram-login", BOT_NAME);
     script.setAttribute("data-size", "large");
@@ -104,7 +103,7 @@ export function AuthPortalPage() {
       if (container) container.innerHTML = "";
       delete (window as any).onTelegramAuth;
     };
-  }, [navigate, hasTelegramInitData]);
+  }, [navigate, hasTelegramInitData, hasSession]);
 
   async function performAuth() {
     try {
