@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/smtp"
+	"net/url"
 	"strings"
 	"time"
 
@@ -31,6 +32,14 @@ func (s LogEmailSender) SendAuthCode(_ context.Context, input AuthCodeEmail) err
 	return nil
 }
 
+type DisabledEmailSender struct {
+	reason string
+}
+
+func (s DisabledEmailSender) SendAuthCode(_ context.Context, _ AuthCodeEmail) error {
+	return fmt.Errorf("email delivery is not configured: %s", s.reason)
+}
+
 type SMTPEmailSender struct {
 	fromEmail string
 	fromName  string
@@ -41,8 +50,20 @@ type SMTPEmailSender struct {
 }
 
 func NewEmailSender(cfg config.Config) EmailSender {
-	if strings.TrimSpace(cfg.SMTPHost) == "" || strings.TrimSpace(cfg.SMTPFromEmail) == "" {
-		return LogEmailSender{}
+	missing := missingSMTPFields(cfg)
+	if len(missing) > 0 {
+		reason := fmt.Sprintf("missing %s", strings.Join(missing, ", "))
+		if isLocalPublicURL(cfg.PublicAppURL) {
+			log.Printf("smtp is not configured; email auth codes will be logged to stdout instead (%s)", reason)
+			return LogEmailSender{}
+		}
+		log.Printf("smtp is not configured; email delivery is disabled (%s)", reason)
+		return DisabledEmailSender{reason: reason}
+	}
+
+	if strings.TrimSpace(cfg.SMTPPort) == "" {
+		log.Printf("smtp port is empty; defaulting to 587")
+		cfg.SMTPPort = "587"
 	}
 
 	return &SMTPEmailSender{
@@ -53,6 +74,34 @@ func NewEmailSender(cfg config.Config) EmailSender {
 		username:  cfg.SMTPUsername,
 		password:  cfg.SMTPPassword,
 	}
+}
+
+func missingSMTPFields(cfg config.Config) []string {
+	var missing []string
+	if strings.TrimSpace(cfg.SMTPHost) == "" {
+		missing = append(missing, "SMTP_HOST")
+	}
+	if strings.TrimSpace(cfg.SMTPFromEmail) == "" {
+		missing = append(missing, "SMTP_FROM_EMAIL")
+	}
+	return missing
+}
+
+func isLocalPublicURL(raw string) bool {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return true
+	}
+	parsed, err := url.Parse(value)
+	if err != nil {
+		return false
+	}
+	host := strings.ToLower(parsed.Hostname())
+	switch host {
+	case "", "localhost", "127.0.0.1", "::1":
+		return true
+	}
+	return strings.HasSuffix(host, ".localhost")
 }
 
 func (s *SMTPEmailSender) SendAuthCode(ctx context.Context, input AuthCodeEmail) error {

@@ -41,7 +41,7 @@ type SessionState = {
   invoices: Invoice[];
 };
 
-type PanelKey = "overview" | "wallets" | "create" | "orders";
+type PanelKey = "overview" | "wallets" | "create" | "orders" | "settings";
 type BillingPlanCode = "pro" | "dev" | "enterprise";
 
 function LiveValue({ value }: { value: string | number }) {
@@ -59,206 +59,230 @@ function LiveValue({ value }: { value: string | number }) {
 const COPY = {
   ru: {
     eyebrow: "Reqst",
-    heroTitle: "Консоль управления",
-    heroCopy:
-      "Управляйте инвойсами, контролируйте поступления и настраивайте кошельки в едином интерфейсе. Порядок в крипто-платежах без рутины.",
+    heroTitle: "Консоль",
+    heroCopy: "Управление инвойсами и кошельками.",
     tabs: {
-      overview: "Главная",
+      overview: "Обзор",
       wallets: "Кошельки",
-      create: "Выставить счет",
+      create: "Создать",
       orders: "Заказы",
+      settings: "Настройки",
     },
-    authTitle: "Вход в панель управления",
-    authCopy: "Пройдите авторизацию, чтобы получить доступ к своим продажам.",
+    authTitle: "Вход",
+    authCopy: "Авторизуйтесь для доступа к продажам.",
     telegramId: "Telegram ID",
-    username: "Имя пользователя",
+    username: "User",
     signIn: "Войти",
-    signingIn: "Авторизация...",
-    authAction: "Авторизоваться",
-    authHint: "Вы можете привязать email-вход в настройках профиля после авторизации.",
+    signingIn: "Вход...",
+    authAction: "Войти",
+    authHint: "Email можно привязать в настройках.",
     seller: "Аккаунт",
     plan: "Тариф",
     wallets: "Кошельки",
     invoices: "Счета",
-    activeWallets: "Активные адреса",
-    totalInvoices: "Выставлено счетов",
-    trialLeft: "Осталось на триале",
-    unlockPro: "Платные планы Reqst",
-    unlockCopy: "Для обычных продаж остаётся Reqst PRO, а для интеграций и B2B теперь доступны Reqst Dev и Reqst Enterprise.",
-    unlockPrice: "Self-serve billing",
-    billingPlan: "План Reqst",
-    billingNetwork: "Сеть для оплаты тарифа",
-    unlockNow: "Создать billing checkout",
-    paywallTitle: "Лимит бесплатного использования исчерпан",
-    paywallBody: "Создание новых инвойсов приостановлено. Выберите нужный платный план и оплатите его обычным Reqst checkout.",
-    recentInvoice: "Последняя активность",
-    noRecentInvoice: "Вы пока не создали ни одной платежной ссылки.",
-    freshLink: "Прямая ссылка",
-    open: "Просмотр",
+    activeWallets: "Сети",
+    totalInvoices: "Всего",
+    trialLeft: "Осталось",
+    unlockPro: "Планы Reqst",
+    unlockCopy: "PRO для продаж, Dev и Enterprise для API и B2B.",
+    unlockPrice: "Billing",
+    billingPlan: "План",
+    billingNetwork: "Сеть оплаты",
+    unlockNow: "Оплатить",
+    paywallTitle: "Лимит исчерпан",
+    paywallBody: "Создание инвойсов приостановлено. Выберите тариф.",
+    recentInvoice: "Активность",
+    noRecentInvoice: "Нет заказов.",
+    freshLink: "Ссылка",
+    open: "Открыть",
     copy: "Копировать",
     logout: "Выйти",
     theme: { light: "Светлая", dark: "Темная" },
     language: { ru: "РУ", en: "EN" },
-    walletTitle: "Настройка выплат",
-    walletCopy: "Добавьте свои кошельки для получения средств. Система поддерживает один активный адрес на каждую сеть.",
-    network: "Сеть приема",
-    address: "Ваш адрес",
-    saveWallet: "Добавить кошелек",
-    noWallets: "У вас нет активных адресов для приема платежей.",
+    walletTitle: "Кошельки",
+    walletCopy: "Один адрес на каждую сеть.",
+    network: "Сеть",
+    address: "Адрес",
+    saveWallet: "Добавить",
+    noWallets: "Нет активных адресов.",
     disable: "Удалить",
     createTitle: "Новый инвойс",
-    createCopy: "Укажите детали платежа, и система подготовит страницу для покупателя.",
-    serviceTitle: "Наименование услуги/товара",
-    amountUsd: "Сумма (эквивалент в USD)",
-    lifetime: "Срок действия ссылки (минут)",
-    generate: "Сформировать счет",
-    ordersTitle: "История платежей",
-    ordersCopy: "Отслеживайте статусы транзакций и управляйте активными заказами.",
-    emptyOrders: "Список заказов пока пуст.",
-    publicId: "ID заказа",
-    expires: "Срок истечения",
-    exact: "Точная сумма",
+    createCopy: "Создание платежной ссылки.",
+    serviceTitle: "Услуга",
+    amountUsd: "Сумма (USD)",
+    lifetime: "Срок (мин)",
+    generate: "Создать ссылку",
+    ordersTitle: "Заказы",
+    ordersCopy: "История транзакций.",
+    emptyOrders: "Список пуст.",
+    publicId: "ID",
+    expires: "Истекает",
+    exact: "Сумма",
     comment: "Комментарий",
-    copyLink: "Копировать URL",
-    cancel: "Аннулировать",
-    markPaid: "Подтвердить вручную",
+    copyLink: "URL",
+    cancel: "Отмена",
+    markPaid: "Подтвердить",
     quickActions: "Действия",
-    accountTitle: "Управление аккаунтом",
-    accountCopy: "Способы входа и базовые настройки аккаунта.",
-    invoicePulseTitle: "Аналитика за 24ч",
-    invoicePulseCopy: "Текущее состояние ваших входящих транзакций.",
-    walletCoverageTitle: "Направления",
-    walletCoverageCopy: "Активные сети, готовые принимать входящие переводы.",
-    developersTitle: "Reqst Dev",
-    developersCopy: "API keys, webhooks и Dev/Enterprise billing теперь живут в отдельном developer portal.",
-    developersAction: "Открыть portal",
-    sellerIdLabel: "Уникальный ID",
-    emailLabel: "Email-адрес",
+    accountTitle: "Профиль",
+    accountCopy: "Настройки аккаунта.",
+    overviewTitle: "Обзор",
+    overviewCopy: "Ключевые показатели и тариф.",
+    invoicePulseTitle: "Статистика",
+    invoicePulseCopy: "Транзакции за 24ч.",
+    walletCoverageTitle: "Сети",
+    walletCoverageCopy: "Готовность к приему.",
+    plansTitle: "План",
+    plansCopy: "Управление подпиской и биллинг.",
+    plansAction: "Биллинг",
+    developersTitle: "Developer Portal",
+    developersCopy: "API keys и Webhooks.",
+    developersAction: "Открыть",
+    settingsTitle: "Настройки",
+    settingsCopy: "Аккаунт и интерфейс.",
+    interfaceTitle: "Интерфейс",
+    interfaceCopy: "Язык и сессия.",
+    consoleLanguage: "Язык",
+    sessionActions: "Сессия",
+    logoutHint: "Завершение текущей сессии.",
+    sellerIdLabel: "ID",
+    emailLabel: "Email",
     emailPlaceholder: "vlad@example.com",
     passwordLabel: "Пароль",
-    passwordPlaceholder: "Минимум 8 символов",
-    codeLabel: "Код подтверждения",
+    passwordPlaceholder: "8+ символов",
+    codeLabel: "Код",
     codePlaceholder: "123456",
-    saveEmail: "Привязать email и пароль",
-    savingEmail: "Привязка...",
-    sendCode: "Выслать код",
-    sendingCode: "Отправка...",
-    emailLinked: "Вход через email и пароль успешно настроен.",
-    emailAccessTitle: "Вход по email",
-    emailAccessCopy: "Добавьте почту и пароль для обычного входа.",
-    emailAccessReady: "Email-авторизация активна для этого профиля.",
+    saveEmail: "Привязать Email",
+    savingEmail: "...",
+    sendCode: "Код",
+    sendingCode: "...",
+    emailLinked: "Email привязан.",
+    emailAccessTitle: "Email",
+    emailAccessCopy: "Вход по почте и паролю.",
+    emailAccessReady: "Email активен.",
     telegramAccessTitle: "Telegram",
-    telegramAccessCopy: "Подключите Telegram к этому же аккаунту.",
-    telegramLinked: "Telegram привязан",
-    telegramMissing: "Telegram не привязан",
-    telegramLinkHint: "Используйте виджет авторизации ниже для привязки вашего аккаунта.",
-    telegramLinkAction: "Привязать через Mini App",
-    accessCodeSent: "Код подтверждения отправлен на указанную почту.",
-    defaultNetwork: "Сеть по умолчанию",
+    telegramAccessCopy: "Привязка Telegram аккаунта.",
+    telegramLinked: "Привязан",
+    telegramMissing: "Не привязан",
+    telegramLinkHint: "Привяжите аккаунт через виджет.",
+    telegramLinkAction: "Привязать",
+    accessCodeSent: "Код отправлен.",
+    defaultNetwork: "Сеть",
     walletReady: "Активен",
-    walletMissing: "Не настроен",
+    walletMissing: "Нет",
     latestCheckout: "Последний заказ",
   },
   en: {
     eyebrow: "Reqst",
-    heroTitle: "Seller Console",
-    heroCopy:
-      "Manage your invoices and track payments in real-time. Clean, automated, and professional.",
+    heroTitle: "Console",
+    heroCopy: "Manage invoices and wallets.",
     tabs: {
       overview: "Overview",
       wallets: "Wallets",
-      create: "Create Link",
-      orders: "Invoices",
+      create: "Create",
+      orders: "Orders",
+      settings: "Settings",
     },
-    authTitle: "Seller Sign-In",
-    authCopy: "Please authenticate to access your dashboard.",
+    authTitle: "Sign-In",
+    authCopy: "Authenticate to access dashboard.",
     telegramId: "Telegram ID",
-    username: "Username",
-    signIn: "Enter Console",
-    signingIn: "Signing in...",
-    authAction: "Sign In",
-    authHint: "You can link an email to your account in the profile section.",
-    seller: "Seller",
+    username: "User",
+    signIn: "Enter",
+    signingIn: "Wait...",
+    authAction: "Login",
+    authHint: "Email can be linked in settings.",
+    seller: "Account",
     plan: "Plan",
     wallets: "Wallets",
     invoices: "Invoices",
-    activeWallets: "Active Wallets",
-    totalInvoices: "Total Created",
-    trialLeft: "Invoices Left",
-    unlockPro: "Reqst Plans",
-    unlockCopy: "Reqst PRO keeps normal seller flows, while Reqst Dev and Reqst Enterprise unlock API keys, webhooks, and higher B2B limits.",
-    unlockPrice: "Self-serve billing",
-    billingPlan: "Reqst plan",
-    billingNetwork: "Payment Network",
-    unlockNow: "Create billing checkout",
-    paywallTitle: "Trial Limit Reached",
-    paywallBody: "New invoices are paused. Pick a paid Reqst plan and pay it through a normal Reqst checkout.",
-    recentInvoice: "Latest Invoice",
-    noRecentInvoice: "No invoices created yet.",
-    freshLink: "Direct Link",
+    activeWallets: "Networks",
+    totalInvoices: "Total",
+    trialLeft: "Left",
+    unlockPro: "Plans",
+    unlockCopy: "PRO for sales, Dev/Enterprise for API.",
+    unlockPrice: "Billing",
+    billingPlan: "Plan",
+    billingNetwork: "Network",
+    unlockNow: "Pay",
+    paywallTitle: "Limit Reached",
+    paywallBody: "Invoice creation paused. Pick a plan.",
+    recentInvoice: "Activity",
+    noRecentInvoice: "No orders.",
+    freshLink: "Link",
     open: "View",
     copy: "Copy",
-    logout: "Log Out",
+    logout: "Logout",
     theme: { light: "Light", dark: "Dark" },
     language: { ru: "RU", en: "EN" },
-    walletTitle: "Payout Wallets",
-    walletCopy: "Add your wallet addresses to start receiving payments. One address per network.",
+    walletTitle: "Wallets",
+    walletCopy: "One address per network.",
     network: "Network",
     address: "Address",
-    saveWallet: "Add Wallet",
-    noWallets: "No active wallets yet.",
+    saveWallet: "Add",
+    noWallets: "No active wallets.",
     disable: "Remove",
     createTitle: "New Invoice",
-    createCopy: "Set service details to generate a secure payment link.",
-    serviceTitle: "Service Name",
-    amountUsd: "Amount, USD",
-    lifetime: "Expires in, minutes",
+    createCopy: "Generate payment link.",
+    serviceTitle: "Service",
+    amountUsd: "Amount (USD)",
+    lifetime: "Expires (min)",
     generate: "Create Link",
-    ordersTitle: "Invoice List",
-    ordersCopy: "Track payment statuses and manage your active links.",
-    emptyOrders: "No invoices found.",
-    publicId: "Public ID",
+    ordersTitle: "Orders",
+    ordersCopy: "Transaction history.",
+    emptyOrders: "List is empty.",
+    publicId: "ID",
     expires: "Expires",
     exact: "Amount",
     comment: "Comment",
-    copyLink: "Copy Link",
+    copyLink: "URL",
     cancel: "Cancel",
-    markPaid: "Confirm Paid",
+    markPaid: "Confirm",
     quickActions: "Actions",
     accountTitle: "Profile",
-    accountCopy: "Sign-in methods and basic account settings.",
+    accountCopy: "Account settings.",
+    overviewTitle: "Overview",
+    overviewCopy: "Key metrics and plan.",
     invoicePulseTitle: "Stats",
-    invoicePulseCopy: "Real-time overview of your invoice states.",
-    walletCoverageTitle: "Payout Lanes",
-    walletCoverageCopy: "Active networks ready to receive funds.",
-    developersTitle: "Reqst Dev",
-    developersCopy: "API keys, webhooks, and Dev or Enterprise billing now live in a dedicated developer portal.",
-    developersAction: "Open portal",
-    sellerIdLabel: "Seller ID",
-    emailLabel: "Email login",
+    invoicePulseCopy: "24h activity.",
+    walletCoverageTitle: "Networks",
+    walletCoverageCopy: "Ready for payments.",
+    plansTitle: "Plan",
+    plansCopy: "Subscription and billing.",
+    plansAction: "Billing",
+    developersTitle: "Developer Portal",
+    developersCopy: "API keys and Webhooks.",
+    developersAction: "Open",
+    settingsTitle: "Settings",
+    settingsCopy: "Identity and preferences.",
+    interfaceTitle: "Interface",
+    interfaceCopy: "Language and session.",
+    consoleLanguage: "Language",
+    sessionActions: "Session",
+    logoutHint: "End current session.",
+    sellerIdLabel: "ID",
+    emailLabel: "Email",
     emailPlaceholder: "name@company.com",
     passwordLabel: "Password",
-    passwordPlaceholder: "At least 8 characters",
-    codeLabel: "Email code",
+    passwordPlaceholder: "8+ characters",
+    codeLabel: "Code",
     codePlaceholder: "123456",
-    saveEmail: "Enable email login",
-    savingEmail: "Saving...",
-    sendCode: "Send code",
-    sendingCode: "Sending...",
-    emailLinked: "Email/password access is already active for this account",
-    emailAccessTitle: "Email login",
-    emailAccessCopy: "Add email and password for regular sign-in.",
-    emailAccessReady: "Email login is already active for this account.",
+    saveEmail: "Link Email",
+    savingEmail: "...",
+    sendCode: "Code",
+    sendingCode: "...",
+    emailLinked: "Email linked.",
+    emailAccessTitle: "Email",
+    emailAccessCopy: "Login with email/password.",
+    emailAccessReady: "Email active.",
     telegramAccessTitle: "Telegram",
-    telegramAccessCopy: "Connect Telegram to the same account.",
-    telegramLinked: "Telegram linked",
-    telegramMissing: "Telegram not linked yet",
-    telegramLinkHint: "Use the Telegram Login Widget below to attach Telegram to the current account.",
-    telegramLinkAction: "Link Telegram from Mini App",
-    accessCodeSent: "Code sent to email. Enter it below to finish linking.",
-    defaultNetwork: "Primary Network",
+    telegramAccessCopy: "Connect Telegram account.",
+    telegramLinked: "Linked",
+    telegramMissing: "Not linked",
+    telegramLinkHint: "Link account via widget.",
+    telegramLinkAction: "Link",
+    accessCodeSent: "Code sent.",
+    defaultNetwork: "Network",
     walletReady: "Active",
-    walletMissing: "Missing",
+    walletMissing: "No",
     latestCheckout: "Latest Order",
   },
 } as const;
@@ -282,7 +306,7 @@ const STATUS_LABELS = {
   },
 } as const;
 
-const PANEL_ORDER: PanelKey[] = ["overview", "wallets", "create", "orders"];
+const PANEL_ORDER: PanelKey[] = ["overview", "wallets", "create", "orders", "settings"];
 
 const WALLET_NETWORK_OPTIONS: Array<{ value: Network; label: string; hint?: string }> = [
   { value: "TON", label: "TON" },
@@ -355,6 +379,7 @@ export function SellerConsolePage() {
     code: "",
     password: "",
   });
+  const isTelegramMiniApp = Boolean(window.Telegram?.WebApp?.initData);
 
   useEffect(() => {
     window.Telegram?.WebApp?.ready?.();
@@ -661,26 +686,10 @@ export function SellerConsolePage() {
           <div className="topbar-brand">
             <strong>reqst</strong>
           </div>
-
-          <div className="topbar-actions">
-            <div className="lend-language topbar-language" role="group" aria-label="language">
-              <button type="button" className={language === "ru" ? "active" : ""} onClick={() => setLanguage("ru")}>
-                RU
-              </button>
-              <button type="button" className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")}>
-                EN
-              </button>
-            </div>
-            {session ? (
-              <button type="button" className="ghost-button compact-button" onClick={handleLogout}>
-                {text.logout}
-              </button>
-            ) : null}
-          </div>
         </div>
 
         {session ? (
-          <nav className="topbar-nav" aria-label="console sections">
+          <nav className="topbar-nav topbar-nav--console" aria-label="console sections">
             {PANEL_ORDER.map((panel) => (
               <button key={panel} type="button" className={activePanel === panel ? "switch-pill active" : "switch-pill"} onClick={() => setActivePanel(panel)}>
                 {text.tabs[panel]}
@@ -714,8 +723,8 @@ export function SellerConsolePage() {
                 <article className="console-surface console-overview-card">
                   <div className="console-section-head">
                     <div>
-                      <h2>{text.accountTitle}</h2>
-                      <p>{text.accountCopy}</p>
+                      <h2>{text.overviewTitle}</h2>
+                      <p>{text.overviewCopy}</p>
                     </div>
                   </div>
 
@@ -742,83 +751,33 @@ export function SellerConsolePage() {
                     </article>
                   </div>
 
-                  <div className="console-access-grid">
-                    <article className="console-access-card">
-                      <div className="console-access-head">
-                        <h3>{text.emailAccessTitle}</h3>
-                        <p>{text.emailAccessCopy}</p>
+                  <div className="console-overview-tiles">
+                    <article className="console-link-card console-link-card--billing">
+                      <span>{text.plansTitle}</span>
+                      <strong>{selectedBillingPlan ? selectedBillingPlan.name : text.unlockPro}</strong>
+                      <p>{text.plansCopy}</p>
+                      <div className="console-link-actions">
+                        <Link className="inline-link" to={`/developers?plan=${billingPlan}`}>
+                          {text.plansAction}
+                        </Link>
+                        <Link className="inline-link" to={billingPlan === "enterprise" ? "/enterprise" : "/dev"}>
+                          {billingPlan === "enterprise" ? "Enterprise" : "Dev"}
+                        </Link>
                       </div>
-
-                      {session.me.seller.has_password && session.me.seller.email_verified_at ? (
-                        <div className="console-access-status">
-                          <strong>{session.me.seller.email}</strong>
-                          <p>{text.emailAccessReady}</p>
-                        </div>
-                      ) : (
-                        <form onSubmit={handleEmailSave} className="console-email-form console-email-form--credentials">
-                          <label>
-                            {text.emailLabel}
-                            <input
-                              type="email"
-                              placeholder={text.emailPlaceholder}
-                              value={emailForm.email}
-                              onChange={(event) => setEmailForm((current) => ({ ...current, email: event.target.value }))}
-                            />
-                          </label>
-                          <div className="console-email-form__row">
-                            <label>
-                              {text.codeLabel}
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                placeholder={text.codePlaceholder}
-                                value={emailForm.code}
-                                onChange={(event) => setEmailForm((current) => ({ ...current, code: event.target.value }))}
-                              />
-                            </label>
-                            <button type="button" className="ghost-button" disabled={sendingEmailCode} onClick={() => void handleEmailCodeRequest()}>
-                              {sendingEmailCode ? text.sendingCode : text.sendCode}
-                            </button>
-                          </div>
-                          <label>
-                            {text.passwordLabel}
-                            <input
-                              type="password"
-                              placeholder={text.passwordPlaceholder}
-                              value={emailForm.password}
-                              onChange={(event) => setEmailForm((current) => ({ ...current, password: event.target.value }))}
-                            />
-                          </label>
-                          <button type="submit" disabled={savingEmail}>
-                            {savingEmail ? text.savingEmail : text.saveEmail}
-                          </button>
-                        </form>
-                      )}
                     </article>
 
-                    <article className="console-access-card">
-                      <div className="console-access-head">
-                        <h3>{text.telegramAccessTitle}</h3>
-                        <p>{text.telegramAccessCopy}</p>
+                    <article className="console-link-card">
+                      <span>{text.developersTitle}</span>
+                      <strong>{text.developersAction}</strong>
+                      <p>{text.developersCopy}</p>
+                      <div className="console-link-actions">
+                        <Link className="inline-link" to={`/developers?plan=${billingPlan}`}>
+                          {text.developersAction}
+                        </Link>
+                        <button type="button" className="ghost-button compact-button" onClick={() => setActivePanel("settings")}>
+                          {text.tabs.settings}
+                        </button>
                       </div>
-
-                      {session.me.seller.telegram_id ? (
-                        <div className="console-access-status">
-                          <strong>{text.telegramLinked}</strong>
-                          <p>@{session.me.seller.username || session.me.seller.telegram_id}</p>
-                        </div>
-                      ) : (
-                        <div className="console-telegram-link">
-                          <p className="muted">{text.telegramLinkHint}</p>
-                          {window.Telegram?.WebApp?.initData ? (
-                            <button type="button" disabled={linkingTelegram} onClick={() => void handleTelegramLink()}>
-                              {linkingTelegram ? text.signingIn : text.telegramLinkAction}
-                            </button>
-                          ) : (
-                            <div id="console-telegram-link-container" className="auth-widget-wrapper" />
-                          )}
-                        </div>
-                      )}
                     </article>
                   </div>
                 </article>
@@ -874,20 +833,6 @@ export function SellerConsolePage() {
                       ) : null}
                     </div>
                   ) : null}
-                </article>
-
-                <article className="console-surface console-spotlight">
-                  <div className="console-section-head">
-                    <div>
-                      <h2>{text.developersTitle}</h2>
-                      <p>{text.developersCopy}</p>
-                    </div>
-                  </div>
-                  <div className="console-link-actions">
-                    <Link className="inline-link" to={`/developers?plan=${billingPlan}`}>
-                      {text.developersAction}
-                    </Link>
-                  </div>
                 </article>
               </aside>
             </section>
@@ -1085,6 +1030,147 @@ export function SellerConsolePage() {
                   {!session.invoices.length ? <p className="muted">{text.emptyOrders}</p> : null}
                 </div>
               </article>
+            </section>
+          ) : null}
+
+          {activePanel === "settings" ? (
+            <section className="console-layout console-layout--overview">
+              <div className="console-stack">
+                <article className="console-surface console-overview-card">
+                  <div className="console-section-head">
+                    <div>
+                      <h2>{text.settingsTitle}</h2>
+                      <p>{text.settingsCopy}</p>
+                    </div>
+                  </div>
+
+                  <div className="console-stat-grid console-stat-grid--profile">
+                    <article className="console-stat-card">
+                      <span>{text.seller}</span>
+                      <strong><LiveValue value={sellerHandle} /></strong>
+                      <p>{text.sellerIdLabel}: {session.me.seller.telegram_id ?? text.telegramMissing}</p>
+                    </article>
+                    <article className="console-stat-card">
+                      <span>{text.plan}</span>
+                      <strong><LiveValue value={session.me.plan.name} /></strong>
+                      <p>{!session.me.plan.is_pro ? `${text.trialLeft}: ${session.me.plan.trial_remaining}` : `${session.me.plan.price_usd} USDT / ${session.me.plan.billing_days}d`}</p>
+                    </article>
+                  </div>
+
+                  <div className="console-access-grid">
+                    <article className="console-access-card">
+                      <div className="console-access-head">
+                        <h3>{text.emailAccessTitle}</h3>
+                        <p>{text.emailAccessCopy}</p>
+                      </div>
+
+                      {session.me.seller.has_password && session.me.seller.email_verified_at ? (
+                        <div className="console-access-status">
+                          <strong>{session.me.seller.email}</strong>
+                          <p>{text.emailAccessReady}</p>
+                        </div>
+                      ) : (
+                        <form onSubmit={handleEmailSave} className="console-email-form console-email-form--credentials">
+                          <label>
+                            {text.emailLabel}
+                            <input
+                              type="email"
+                              placeholder={text.emailPlaceholder}
+                              value={emailForm.email}
+                              onChange={(event) => setEmailForm((current) => ({ ...current, email: event.target.value }))}
+                            />
+                          </label>
+                          <div className="console-email-form__row">
+                            <label>
+                              {text.codeLabel}
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder={text.codePlaceholder}
+                                value={emailForm.code}
+                                onChange={(event) => setEmailForm((current) => ({ ...current, code: event.target.value }))}
+                              />
+                            </label>
+                            <button type="button" className="ghost-button" disabled={sendingEmailCode} onClick={() => void handleEmailCodeRequest()}>
+                              {sendingEmailCode ? text.sendingCode : text.sendCode}
+                            </button>
+                          </div>
+                          <label>
+                            {text.passwordLabel}
+                            <input
+                              type="password"
+                              placeholder={text.passwordPlaceholder}
+                              value={emailForm.password}
+                              onChange={(event) => setEmailForm((current) => ({ ...current, password: event.target.value }))}
+                            />
+                          </label>
+                          <button type="submit" disabled={savingEmail}>
+                            {savingEmail ? text.savingEmail : text.saveEmail}
+                          </button>
+                        </form>
+                      )}
+                    </article>
+
+                    <article className="console-access-card">
+                      <div className="console-access-head">
+                        <h3>{text.telegramAccessTitle}</h3>
+                        <p>{text.telegramAccessCopy}</p>
+                      </div>
+
+                      {session.me.seller.telegram_id ? (
+                        <div className="console-access-status">
+                          <strong>{text.telegramLinked}</strong>
+                          <p>@{session.me.seller.username || session.me.seller.telegram_id}</p>
+                        </div>
+                      ) : (
+                        <div className="console-telegram-link">
+                          <p className="muted">{text.telegramLinkHint}</p>
+                          {window.Telegram?.WebApp?.initData ? (
+                            <button type="button" disabled={linkingTelegram} onClick={() => void handleTelegramLink()}>
+                              {linkingTelegram ? text.signingIn : text.telegramLinkAction}
+                            </button>
+                          ) : (
+                            <div id="console-telegram-link-container" className="auth-widget-wrapper" />
+                          )}
+                        </div>
+                      )}
+                    </article>
+                  </div>
+                </article>
+              </div>
+
+              <aside className="console-rail">
+                <article className="console-surface console-spotlight">
+                  <div className="console-section-head">
+                    <div>
+                      <h2>{text.interfaceTitle}</h2>
+                      <p>{text.interfaceCopy}</p>
+                    </div>
+                  </div>
+
+                  <div className="console-settings-group">
+                    <span>{text.consoleLanguage}</span>
+                    <div className="lend-language console-language-picker" role="group" aria-label="language">
+                      <button type="button" className={language === "ru" ? "active" : ""} onClick={() => setLanguage("ru")}>
+                        RU
+                      </button>
+                      <button type="button" className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")}>
+                        EN
+                      </button>
+                    </div>
+                  </div>
+
+                  {!isTelegramMiniApp ? (
+                    <div className="console-settings-group">
+                      <span>{text.sessionActions}</span>
+                      <p>{text.logoutHint}</p>
+                      <button type="button" className="ghost-button compact-button" onClick={handleLogout}>
+                        {text.logout}
+                      </button>
+                    </div>
+                  ) : null}
+                </article>
+              </aside>
             </section>
           ) : null}
         </>

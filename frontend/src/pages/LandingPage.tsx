@@ -469,41 +469,8 @@ export function LandingPage() {
           <aside className="lend-hero-side lend-reveal--3" aria-label={copy.heroPanel.title}>
             <div className="lend-hero-panel">
               <div className="lend-panel-heading">
-                <span className="lend-kicker">{copy.heroPanel.eyebrow}</span>
                 <h2>{copy.heroPanel.title}</h2>
                 <p>{copy.heroPanel.body}</p>
-              </div>
-
-              <div className="lend-demo-card">
-                <div className="lend-demo-browser">
-                  <span />
-                  <span />
-                  <span />
-                  <b>reqst.app/checkout/demo</b>
-                </div>
-
-                <div className="lend-demo-stage">
-                  <div className="lend-demo-receipt">
-                    <div className="lend-demo-receipt-top">
-                      <span className="lend-demo-badge">Reqst Checkout</span>
-                      <span className="lend-demo-status">{copy.heroPanel.status}</span>
-                    </div>
-                    <strong>{copy.heroPanel.amount}</strong>
-                    <p>{copy.heroPanel.invoice}</p>
-
-                    <div className="lend-demo-chip-row">
-                      {copy.heroPanel.chips.map((chip) => (
-                        <span key={chip} className="lend-demo-chip">
-                          {chip}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="lend-demo-qr" aria-hidden="true">
-                    <div className="lend-demo-qr-grid" />
-                  </div>
-                </div>
               </div>
 
               <div className="lend-panel-actions">
@@ -514,8 +481,6 @@ export function LandingPage() {
                   {copy.heroPanel.secondary}
                 </Link>
               </div>
-
-              <p className="lend-panel-helper">{copy.heroPanel.helper}</p>
             </div>
           </aside>
         </section>

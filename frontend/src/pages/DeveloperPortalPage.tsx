@@ -33,140 +33,170 @@ const NETWORK_OPTIONS: Array<{ value: Network; label: string }> = [
 
 const COPY = {
   ru: {
-    title: "Центр управления интеграцией",
-    body: "Единое рабочее пространство для управления API-ключами, точками доставки уведомлений и мониторинга текущей нагрузки.",
-    authTitle: "Требуется авторизация",
-    authBody: "Используйте основной аккаунт продавца для выпуска ключей и активации планов интеграции.",
+    title: "Интеграция",
+    body: "Управление API-ключами и Webhooks.",
+    portalNav: {
+      access: "Доступ",
+      security: "Ключи",
+      delivery: "Вебхуки",
+      usage: "Лимиты",
+    },
+    authTitle: "Вход",
+    authBody: "Используйте основной аккаунт для выпуска ключей.",
     authAction: "Войти",
     back: "Главная",
-    console: "Панель управления",
-    upgradeTitle: "Активация доступа к API",
-    upgradeBody: "Интеграционный доступ не активен. Выберите и оплатите подходящий план для автоматического открытия лимитов.",
+    console: "Консоль",
+    upgradeTitle: "Активация API",
+    upgradeBody: "Выберите план для открытия лимитов.",
     plan: "План",
     network: "Сеть оплаты",
-    createCheckout: "Сформировать инвойс",
-    usageTitle: "Нагрузка и квоты",
-    usageBody: "Текущее состояние лимитов, количество активных подключений и минутная нагрузка.",
+    createCheckout: "Оплатить",
+    usageTitle: "Лимиты",
+    usageBody: "Текущее состояние квот.",
     keysTitle: "API Ключи",
-    keysBody: "Секретный ключ отображается только один раз при выпуске. Храните его в безопасном месте.",
-    hooksTitle: "Webhook-эндпоинты",
-    hooksBody: "Reqst подписывает каждое событие заголовком X-Reqst-Signature для верификации источника.",
-    keyLabel: "Название ключа",
-    keyPlaceholder: "Production Backend",
+    keysBody: "Секрет отображается только один раз.",
+    hooksTitle: "Webhooks",
+    hooksBody: "Reqst подписывает события заголовком X-Reqst-Signature.",
+    keyLabel: "Название",
+    keyPlaceholder: "Backend",
     createKey: "Создать ключ",
-    hookLabel: "Описание эндпоинта",
+    hookLabel: "Название",
     hookLabelPlaceholder: "Webhooks Handler",
-    hookUrl: "URL эндпоинта",
-    hookUrlPlaceholder: "https://api.example.com/webhooks/reqst",
-    createHook: "Добавить эндпоинт",
+    hookUrl: "URL",
+    hookUrlPlaceholder: "https://api.example.com/webhooks",
+    createHook: "Добавить",
     remove: "Удалить",
     copy: "Копировать",
-    latestSecret: "Новый API-ключ",
-    latestCheckout: "Инвойс на оплату плана",
-    sampleTitle: "Пример интеграции",
-    sampleBody: "Базовый POST-запрос для создания инвойса через API.",
-    monthly: "Запросов в месяц",
-    rpm: "Нагрузка в минуту (RPM)",
-    keyCap: "Активные ключи",
+    latestSecret: "Новый ключ",
+    latestCheckout: "Инвойс за план",
+    sampleTitle: "Пример запроса",
+    sampleBody: "Создание инвойса через API.",
+    monthly: "Месяц",
+    rpm: "RPM",
+    keyCap: "Ключи",
     hookCap: "Эндпоинты",
-    emptyKeys: "Активные API-ключи отсутствуют.",
-    emptyHooks: "Эндпоинты не настроены.",
-    heroCards: [
-      {
-        title: "Консолидированный интерфейс",
-        body: "Управление биллингом, ключами и точками доставки уведомлений в рамках одного рабочего пространства.",
-      },
-      {
-        title: "Self-serve активация",
-        body: "План активируется мгновенно после подтверждения оплаты. Без участия sales-отдела и ожидания.",
-      },
-      {
-        title: "Техническая прозрачность",
-        body: "Полная видимость текущего потребления ресурсов и лимитов для каждого окружения.",
-      },
-    ],
-    railTitle: "Функциональные возможности",
-    currentPlan: "Текущий план",
-    currentStatus: "Статус доступа",
+    emptyKeys: "Ключи отсутствуют.",
+    emptyHooks: "Webhooks не настроены.",
+    heroCards: [],
+    railTitle: "Возможности",
+    currentPlan: "План",
+    currentStatus: "Статус",
     accessEnabled: "Доступ открыт",
     rails: [
-      "Активация Dev или Enterprise планов через прямой платеж.",
-      "Выпуск изолированных ключей для различных сервисов.",
-      "Настройка Webhook-эндпоинтов для событий оплаты.",
-      "Мониторинг квот и нагрузки в реальном времени.",
+      "Активация планов через платеж.",
+      "Выпуск API-ключей.",
+      "Настройка Webhooks.",
+      "Мониторинг квот.",
     ],
-    lockedTitle: "Структура портала",
-    lockedBody: "Авторизация открывает доступ к инструментам управления ключами, доставкой событий и лимитами.",
-    summaryTitle: "Состояние интеграции",
-    summaryFallback: "Доступ не активирован",
+    lockedTitle: "Портал",
+    lockedBody: "Авторизуйтесь для управления ключами.",
+    summaryTitle: "Состояние",
+    summaryFallback: "Не активен",
+    plansTitle: "Планы",
+    plansBody: "Выберите подходящий уровень доступа.",
+    plans: [
+      {
+        name: "Reqst Dev",
+        badge: "Продукт",
+        body: "API-ключи и Webhooks для команд.",
+      },
+      {
+        name: "Reqst Enterprise",
+        badge: "B2B",
+        body: "Высокие лимиты и приоритетная доставка.",
+      },
+    ],
+    billingTitle: "Биллинг",
+    billingBody: "Создание инвойса на оплату.",
+    securityTitle: "Безопасность",
+    securityBody: "Ключи доступа к API.",
+    deliveryTitle: "Доставка событий",
+    deliveryBody: "Настройка Webhook-эндпоинтов.",
+    sampleCardTitle: "Quick Start",
+    sampleCardBody: "Пример POST-запроса.",
   },
   en: {
-    title: "Reqst Integration Portal",
-    body: "This page combines plan activation, API keys, delivery endpoints, and usage visibility in one working surface.",
-    authTitle: "Sign in to access the integration portal",
-    authBody: "Use the same seller account to issue keys, connect delivery endpoints, and buy Dev or Enterprise without a separate sales flow.",
-    authAction: "Sign in to Reqst",
+    title: "Integration",
+    body: "Manage API keys and Webhooks.",
+    portalNav: {
+      access: "Access",
+      security: "Keys",
+      delivery: "Webhooks",
+      usage: "Limits",
+    },
+    authTitle: "Sign in",
+    authBody: "Use your seller account to issue keys.",
+    authAction: "Login",
     back: "Home",
-    console: "Seller Console",
-    upgradeTitle: "Enable Dev or Enterprise",
-    upgradeBody: "This account does not have integration access yet. Buy a plan through a normal Reqst billing link and access will unlock automatically after payment.",
+    console: "Console",
+    upgradeTitle: "Enable API",
+    upgradeBody: "Pick a plan to unlock limits.",
     plan: "Plan",
-    network: "Payment network",
-    createCheckout: "Create billing link",
-    usageTitle: "Usage and limits",
-    usageBody: "Current quotas, minute load, and active integrations.",
-    keysTitle: "Access keys",
-    keysBody: "A full secret is shown only once after creation.",
-    hooksTitle: "Delivery endpoints",
-    hooksBody: "Reqst signs webhook deliveries with the X-Reqst-Signature header.",
-    keyLabel: "Key label",
-    keyPlaceholder: "Production backend",
-    createKey: "Create API key",
-    hookLabel: "Endpoint label",
-    hookLabelPlaceholder: "Payments webhook",
-    hookUrl: "Webhook URL",
-    hookUrlPlaceholder: "https://app.example.com/webhooks/reqst",
-    createHook: "Add webhook",
+    network: "Network",
+    createCheckout: "Upgrade",
+    usageTitle: "Limits",
+    usageBody: "Current quotas and load.",
+    keysTitle: "API Keys",
+    keysBody: "Secret is shown once.",
+    hooksTitle: "Webhooks",
+    hooksBody: "Deliveries are signed with X-Reqst-Signature.",
+    keyLabel: "Label",
+    keyPlaceholder: "Production",
+    createKey: "Create key",
+    hookLabel: "Label",
+    hookLabelPlaceholder: "Payments hook",
+    hookUrl: "URL",
+    hookUrlPlaceholder: "https://app.example.com/webhooks",
+    createHook: "Add hook",
     remove: "Remove",
     copy: "Copy",
-    latestSecret: "Newest API key",
-    latestCheckout: "Latest billing checkout",
+    latestSecret: "New key",
+    latestCheckout: "Billing link",
     sampleTitle: "Request sample",
-    sampleBody: "Create an invoice through the Reqst Dev API.",
-    monthly: "Monthly usage",
-    rpm: "Current minute usage",
-    keyCap: "Active keys",
-    hookCap: "Webhook endpoints",
-    emptyKeys: "No active API keys yet.",
-    emptyHooks: "No webhook endpoints yet.",
-    heroCards: [
-      {
-        title: "One operating surface",
-        body: "Billing activation, key issuance, quotas, and delivery endpoints live in one place.",
-      },
-      {
-        title: "Self-serve plan activation",
-        body: "Buy the plan through a normal Reqst payment flow and unlock access automatically after confirmation.",
-      },
-      {
-        title: "Clear operational visibility",
-        body: "Track current usage and split credentials across services without guessing where the limit is.",
-      },
-    ],
-    railTitle: "What you can do here",
+    sampleBody: "Create an invoice via API.",
+    monthly: "Monthly",
+    rpm: "RPM",
+    keyCap: "Keys",
+    hookCap: "Endpoints",
+    emptyKeys: "No active keys.",
+    emptyHooks: "No webhooks.",
+    heroCards: [],
+    railTitle: "Features",
     currentPlan: "Plan",
     currentStatus: "Status",
-    accessEnabled: "Access enabled",
+    accessEnabled: "Active",
     rails: [
-      "Activate Dev or Enterprise through a normal payment flow.",
-      "Issue separate keys for services and environments.",
-      "Connect delivery endpoints for payment events.",
-      "Watch current load and quota usage in one panel.",
+      "Self-serve plan activation.",
+      "API key issuance.",
+      "Webhook delivery.",
+      "Real-time usage tracking.",
     ],
-    lockedTitle: "What the portal covers",
-    lockedBody: "Sign-in comes first, but the structure is straightforward: billing, credentials, delivery endpoints, and usage state.",
-    summaryTitle: "Portal state",
-    summaryFallback: "Integration access is not active yet",
+    lockedTitle: "Portal",
+    lockedBody: "Sign in to manage credentials.",
+    summaryTitle: "State",
+    summaryFallback: "Inactive",
+    plansTitle: "Plans",
+    plansBody: "Select your integration layer.",
+    plans: [
+      {
+        name: "Reqst Dev",
+        badge: "Product",
+        body: "API keys and webhooks for teams.",
+      },
+      {
+        name: "Reqst Enterprise",
+        badge: "B2B",
+        body: "High limits and priority delivery.",
+      },
+    ],
+    billingTitle: "Billing",
+    billingBody: "Activate your plan.",
+    securityTitle: "Security",
+    securityBody: "API access keys.",
+    deliveryTitle: "Events",
+    deliveryBody: "Webhook endpoint management.",
+    sampleCardTitle: "Quick Start",
+    sampleCardBody: "API request example.",
   },
 } as const;
 
@@ -294,12 +324,13 @@ export function DeveloperPortalPage() {
   const sampleCurl = useMemo(() => {
     const secret = latestSecret || "rk_live_your_key";
     return [
-      "curl -X POST https://api.reqst.xyz/v1/invoices \\",
-      `  -H "Authorization: Bearer ${secret}" \\`,
-      '  -H "Content-Type: application/json" \\',
+      "curl -X POST https://api.reqst.xyz/v1/invoices \",
+      `  -H "Authorization: Bearer ${secret}" \`,
+      '  -H "Content-Type: application/json" \',
       '  -d \'{"title":"Product Subscription","base_amount_usd":"25.00","payable_network":"TRON"}\'',
     ].join("\n");
   }, [latestSecret]);
+  const selectedPlanMeta = text.plans.find((plan) => plan.name.toLowerCase().includes(billingPlan));
 
   return (
     <main className="shell checkout-shell checkout-shell--wide">
@@ -322,9 +353,16 @@ export function DeveloperPortalPage() {
 
       <section className="developer-portal__hero page-section-offset">
         <div className="developer-portal__hero-copy">
-          <span className="eyebrow">Integration Command Center</span>
+          <span className="eyebrow">Integration</span>
           <h1>{text.title}</h1>
           <p className="hero-copy">{text.body}</p>
+
+          <div className="developer-portal__nav-pills" aria-label="portal sections">
+            <span>{text.portalNav.access}</span>
+            <span>{text.portalNav.security}</span>
+            <span>{text.portalNav.delivery}</span>
+            <span>{text.portalNav.usage}</span>
+          </div>
 
           <div className="developer-portal__rail developer-portal__rail--spaced">
             <span className="receipt-brandline">{text.railTitle}</span>
@@ -342,13 +380,19 @@ export function DeveloperPortalPage() {
         </div>
 
         <div className="developer-portal__hero-stack">
-          {text.heroCards.map((card) => (
-            <article key={card.title} className="console-link-card">
-              <span>Operational Layer</span>
-              <strong>{card.title}</strong>
-              <p>{card.body}</p>
-            </article>
-          ))}
+          <article className="developer-card developer-card--plans">
+            <span className="developer-card__eyebrow">{text.plansTitle}</span>
+            <h2>{text.plansBody}</h2>
+            <div className="developer-card__tile-grid">
+              {text.plans.map((plan) => (
+                <article key={plan.name} className={`developer-card__tile${selectedPlanMeta?.name === plan.name ? " is-active" : ""}`}>
+                  <strong>{plan.name}</strong>
+                  <span className="developer-card__tile-badge">{plan.badge}</span>
+                  <p>{plan.body}</p>
+                </article>
+              ))}
+            </div>
+          </article>
         </div>
       </section>
 
@@ -373,7 +417,7 @@ export function DeveloperPortalPage() {
 
           <section className="payment-sheet payment-sheet--receipt developer-portal__locked-sheet">
             <div className="payment-sheet-header">
-              <span className="payment-sheet-kicker">{text.lockedTitle}</span>
+              <span className="payment-sheet-kicker">Portal</span>
             </div>
             <div className="payment-essentials">
               <div className="payment-field">
@@ -413,8 +457,17 @@ export function DeveloperPortalPage() {
                   <span className="receipt-brandline">Billing</span>
                   <span className="completion-ticket-no">Upgrade</span>
                 </div>
-                <h2 className="developer-portal__section-title">{text.upgradeTitle}</h2>
-                <p className="hero-copy">{text.upgradeBody}</p>
+                <h2 className="developer-portal__section-title">{text.billingTitle}</h2>
+                <p className="hero-copy">{text.billingBody}</p>
+                <div className="developer-portal__plan-grid page-section-offset--compact">
+                  {text.plans.map((plan) => (
+                    <article key={plan.name} className={`developer-portal__plan-card${selectedPlanMeta?.name === plan.name ? " is-selected" : ""}`}>
+                      <span>{plan.badge}</span>
+                      <strong>{plan.name}</strong>
+                      <p>{plan.body}</p>
+                    </article>
+                  ))}
+                </div>
                 <div className="form-grid page-section-offset--compact">
                   <label>
                     {text.plan}
@@ -454,9 +507,11 @@ export function DeveloperPortalPage() {
               <>
                 <article className="checkout-card checkout-card--lux developer-portal__card">
                   <div className="completion-paper-topline">
-                    <span className="receipt-brandline">Usage Quotas</span>
+                    <span className="receipt-brandline">Usage</span>
                     <span className="completion-ticket-no">Live</span>
                   </div>
+                  <h2 className="developer-portal__section-title">{text.usageTitle}</h2>
+                  <p className="hero-copy">{text.usageBody}</p>
                   <div className="console-pulse-grid console-pulse-grid--two developer-portal__pulse-grid">
                     <div className="console-pulse-card">
                       <span>{text.monthly}</span>
@@ -482,6 +537,8 @@ export function DeveloperPortalPage() {
                     <span className="receipt-brandline">Security</span>
                     <span className="completion-ticket-no">{text.keysTitle}</span>
                   </div>
+                  <h2 className="developer-portal__section-title">{text.securityTitle}</h2>
+                  <p className="hero-copy">{text.securityBody}</p>
                   <form onSubmit={handleCreateKey} className="form-grid page-section-offset--compact">
                     <label>
                       {text.keyLabel}
@@ -522,12 +579,14 @@ export function DeveloperPortalPage() {
 
           <section className="console-stack">
             {me.plan.has_webhooks ? (
-              <article className="checkout-card checkout-card--lux" style={{ padding: "1.5rem" }}>
+              <article className="checkout-card checkout-card--lux developer-portal__card">
                 <div className="completion-paper-topline">
                   <span className="receipt-brandline">Events</span>
                   <span className="completion-ticket-no">{text.hooksTitle}</span>
                 </div>
-                <form onSubmit={handleCreateWebhook} className="form-grid" style={{ marginTop: "1.5rem" }}>
+                <h2 className="developer-portal__section-title">{text.deliveryTitle}</h2>
+                <p className="hero-copy">{text.deliveryBody}</p>
+                <form onSubmit={handleCreateWebhook} className="form-grid page-section-offset--compact">
                   <label>
                     {text.hookLabel}
                     <input
@@ -546,21 +605,21 @@ export function DeveloperPortalPage() {
                   </label>
                   <button type="submit" className="lend-primary">{text.createHook}</button>
                 </form>
-                <div className="stack-list" style={{ marginTop: "1.5rem" }}>
+                <div className="stack-list page-section-offset--compact">
                   {webhooks.map((hook) => (
-                    <div key={hook.id} className="payment-field" style={{ gridTemplateColumns: "1fr" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                        <div style={{ minWidth: 0 }}>
+                    <div key={hook.id} className="payment-field developer-portal__webhook-row">
+                      <div className="developer-portal__webhook-head">
+                        <div className="developer-portal__webhook-copy">
                           <label>{hook.label}</label>
-                          <code style={{ fontSize: "0.85rem" }}>{hook.url}</code>
+                          <code>{hook.url}</code>
                         </div>
                         <button type="button" className="ghost-button compact-button" onClick={() => void handleDeleteWebhook(hook.id)}>
                           {text.remove}
                         </button>
                       </div>
-                      <div className="payload-callout" style={{ marginTop: "0.5rem", padding: "0.5rem 0.75rem" }}>
+                      <div className="payload-callout developer-portal__webhook-secret">
                         <span>Signing Secret</span>
-                        <code style={{ fontSize: "0.75rem" }}>{hook.secret}</code>
+                        <code>{hook.secret}</code>
                       </div>
                     </div>
                   ))}
@@ -569,15 +628,15 @@ export function DeveloperPortalPage() {
               </article>
             ) : null}
 
-            <article className="checkout-card checkout-card--lux" style={{ padding: "1.5rem" }}>
+            <article className="checkout-card checkout-card--lux developer-portal__card">
               <div className="completion-paper-topline">
                 <span className="receipt-brandline">Implementation</span>
                 <span className="completion-ticket-no">SDK</span>
               </div>
-              <h2 style={{ marginTop: "1.5rem" }}>{text.sampleTitle}</h2>
-              <p className="hero-copy" style={{ marginBottom: "1rem" }}>{text.sampleBody}</p>
-              <pre className="completion-ledger" style={{ background: "var(--paper-strong)", padding: "1rem", borderRadius: "18px", overflowX: "auto", display: "block" }}>
-                <code style={{ fontSize: "0.85rem", whiteSpace: "pre" }}>{sampleCurl}</code>
+              <h2 className="developer-portal__section-title">{text.sampleCardTitle}</h2>
+              <p className="hero-copy">{text.sampleCardBody}</p>
+              <pre className="completion-ledger developer-portal__code-block">
+                <code>{sampleCurl}</code>
               </pre>
             </article>
           </section>

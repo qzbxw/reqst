@@ -32,49 +32,49 @@ declare global {
 const COPY = {
   ru: {
     title: "Вход в Reqst",
-    body: "Почта и пароль для обычной работы в браузере. Telegram оставили как быстрый вход из Mini App.",
+    body: "Используйте почту для входа или Telegram Mini App для быстрого доступа.",
     telegramTitle: "Telegram",
-    telegramBody: "Если вы внутри Telegram, можно открыть Mini App и войти без лишних шагов.",
+    telegramBody: "Вход в один клик через Mini App.",
     openBot: "Открыть бота",
     continueTelegram: "Войти через Telegram",
     signingIn: "Авторизация...",
     landing: "На главную",
     console: "В панель управления",
     emailTitle: "Почта и пароль",
-    emailBody: "Основной способ входа для ежедневной работы с консолью и оплатами.",
+    emailBody: "Классический вход через email.",
     emailModes: {
       login: "Вход",
       register: "Регистрация",
-      reset: "Сброс пароля",
+      reset: "Сброс",
     },
     email: "Email",
     emailPlaceholder: "name@example.com",
     password: "Пароль",
     passwordPlaceholder: "Минимум 8 символов",
     newPassword: "Новый пароль",
-    code: "Код подтверждения",
+    code: "Код",
     codePlaceholder: "123456",
-    sendCode: "Получить код",
-    sendingCode: "Отправка...",
+    sendCode: "Код",
+    sendingCode: "...",
     loginAction: "Войти",
-    registerAction: "Зарегистрироваться",
+    registerAction: "Создать аккаунт",
     resetAction: "Обновить пароль",
-    codeSent: "Код подтвержден и отправлен. Проверьте почту (включая папку Спам).",
-    browserHint: "В браузере лучше использовать email, а Telegram оставить для входа из Mini App.",
-    redirectHint: "После входа вы вернётесь туда, откуда пришли.",
+    codeSent: "Код отправлен на почту.",
+    browserHint: "В браузере используйте email.",
+    redirectHint: "Вы будете перенаправлены после входа.",
   },
   en: {
-    title: "Sign in to reqst",
-    body: "Use email and password for regular browser access. Telegram stays available as a faster Mini App shortcut.",
+    title: "Sign in to Reqst",
+    body: "Use email for browser access or Telegram for quick entry.",
     telegramTitle: "Telegram",
-    telegramBody: "If you are already inside Telegram, open the Mini App and continue without the usual browser flow.",
+    telegramBody: "Instant access via Mini App.",
     openBot: "Open Bot",
     continueTelegram: "Login with Telegram",
-    signingIn: "Signing in...",
-    landing: "Back to Home",
-    console: "Open Console",
-    emailTitle: "Email + password",
-    emailBody: "Regular email sign-in without relying only on Telegram.",
+    signingIn: "Wait...",
+    landing: "Home",
+    console: "Console",
+    emailTitle: "Email",
+    emailBody: "Sign in with your email and password.",
     emailModes: {
       login: "Login",
       register: "Sign up",
@@ -83,18 +83,18 @@ const COPY = {
     email: "Email",
     emailPlaceholder: "you@example.com",
     password: "Password",
-    passwordPlaceholder: "At least 8 characters",
+    passwordPlaceholder: "8+ characters",
     newPassword: "New password",
-    code: "Email code",
+    code: "Code",
     codePlaceholder: "123456",
-    sendCode: "Send code",
-    sendingCode: "Sending...",
+    sendCode: "Get code",
+    sendingCode: "...",
     loginAction: "Login",
-    registerAction: "Create account",
-    resetAction: "Reset password",
-    codeSent: "Code sent. Check your inbox and finish the flow in this form.",
-    browserHint: "In a browser, email is the main path. Telegram works best from the Mini App.",
-    redirectHint: "After sign-in, you will be returned to the page you originally opened.",
+    registerAction: "Sign up",
+    resetAction: "Reset",
+    codeSent: "Code sent to your email.",
+    browserHint: "Email is the main path in browsers.",
+    redirectHint: "You will be redirected after sign-in.",
   },
 } as const;
 
@@ -257,7 +257,6 @@ export function AuthPortalPage() {
 
       <section className="auth-portal__compact">
         <div className="auth-portal__copy auth-portal__copy--compact">
-          <span className="eyebrow">Reqst Access</span>
           <h1>{text.title}</h1>
           <p>{text.body}</p>
           {nextPath !== "/console" ? <p className="auth-portal__hint">{text.redirectHint}</p> : null}
@@ -265,7 +264,7 @@ export function AuthPortalPage() {
 
         <article className="checkout-card checkout-card--lux auth-card auth-card--email auth-card--primary">
           <div className="completion-paper-topline">
-            <span className="receipt-brandline">Primary Access</span>
+            <span className="receipt-brandline">Primary</span>
             <span className="completion-ticket-no">Email</span>
           </div>
           <div className="auth-card__content">

@@ -1527,10 +1527,6 @@ code {
   align-items: stretch;
 }
 
-.topbar--console .topbar-actions {
-  justify-content: flex-end;
-}
-
 .live-value {
   display: inline-block;
 }
@@ -1682,6 +1678,12 @@ code {
 .console-link-card--billing {
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 54%, var(--paper-strong)), color-mix(in srgb, var(--secondary) 64%, var(--paper-strong)));
+}
+
+.console-overview-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
 }
 
 .console-link-actions--billing select {
@@ -1884,6 +1886,36 @@ code {
 .console-coverage-dot.is-ready {
   background: color-mix(in srgb, var(--ok) 82%, white);
   box-shadow: 0 0 0 7px color-mix(in srgb, var(--ok) 12%, transparent);
+}
+
+.console-settings-group {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1rem;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--paper-strong) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+}
+
+.console-settings-group > span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.console-settings-group p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.console-language-picker {
+  width: 100%;
+  justify-content: stretch;
+}
+
+.console-language-picker button {
+  flex: 1 1 0;
 }
 
 .panel-switcher--console {
@@ -2299,7 +2331,8 @@ code {
   .invoice-card--console,
   .console-stat-card,
   .console-pulse-card,
-  .console-coverage-row {
+  .console-coverage-row,
+  .console-settings-group {
     border-radius: 20px;
   }
 
@@ -2350,6 +2383,10 @@ code {
   }
 
   .console-access-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .console-overview-tiles {
     grid-template-columns: 1fr;
   }
 
@@ -3801,6 +3838,16 @@ html {
   letter-spacing: -0.01em;
 }
 
+.lend-faq-answer-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s ease;
+}
+
+.lend-faq-answer-wrapper.is-open {
+  grid-template-rows: 1fr;
+}
+
 .lend-faq-answer {
   min-height: 0;
   overflow: hidden;
@@ -4067,6 +4114,11 @@ html {
   .lend-compare,
   .lend-network-layout {
     grid-template-columns: 1fr;
+  }
+
+  #faq .lend-section-copy {
+    position: static !important;
+    top: auto !important;
   }
 }
 
@@ -5233,6 +5285,26 @@ html {
   gap: 1rem;
 }
 
+.developer-portal__nav-pills {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.developer-portal__nav-pills span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.2rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(244, 238, 230, 0.74);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .developer-portal__rail {
   display: grid;
   gap: 0.8rem;
@@ -5298,6 +5370,26 @@ html {
 
 .developer-card__tile p {
   margin: 0;
+}
+
+.developer-card__tile.is-active,
+.developer-portal__plan-card.is-selected {
+  border-color: rgba(255, 168, 99, 0.34);
+  background: rgba(255, 148, 77, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.developer-card__tile-badge {
+  display: inline-flex;
+  width: fit-content;
+  margin-bottom: 0.5rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(244, 238, 230, 0.7);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .developer-form-grid {
@@ -5434,7 +5526,8 @@ html {
 
   .plan-page__stats,
   .developer-card__tile-grid,
-  .developer-portal__rail-list {
+  .developer-portal__rail-list,
+  .developer-portal__plan-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -5465,6 +5558,16 @@ html {
   .auth-portal__signal-list {
     padding: 1rem;
     border-radius: 24px;
+  }
+
+  .developer-portal__nav-pills {
+    gap: 0.45rem;
+  }
+
+  .developer-portal__nav-pills span {
+    min-height: 2rem;
+    padding: 0.4rem 0.68rem;
+    font-size: 0.72rem;
   }
 }
 
@@ -5680,6 +5783,37 @@ html {
   margin-top: 1.5rem;
 }
 
+.developer-portal__plan-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.developer-portal__plan-card {
+  display: grid;
+  gap: 0.45rem;
+  padding: 1rem;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.developer-portal__plan-card span {
+  color: rgba(244, 238, 230, 0.6);
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.developer-portal__plan-card strong {
+  font-size: 1.15rem;
+}
+
+.developer-portal__plan-card p {
+  margin: 0;
+  color: rgba(244, 238, 230, 0.72);
+}
+
 .developer-portal__inline-copy {
   display: flex;
   gap: 0.5rem;
@@ -5692,6 +5826,41 @@ html {
 
 .developer-portal__inline-code--small {
   font-size: 0.85rem;
+}
+
+.developer-portal__webhook-row {
+  grid-template-columns: 1fr;
+}
+
+.developer-portal__webhook-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.9rem;
+  align-items: flex-start;
+}
+
+.developer-portal__webhook-copy {
+  min-width: 0;
+}
+
+.developer-portal__webhook-copy code,
+.developer-portal__webhook-secret code,
+.developer-portal__code-block code {
+  font-size: 0.82rem;
+}
+
+.developer-portal__webhook-secret {
+  margin-top: 0.55rem;
+  padding: 0.55rem 0.8rem;
+}
+
+.developer-portal__code-block {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 18px;
+  overflow-x: auto;
+  display: block;
+  background: var(--paper-strong);
 }
 
 .checkout-flow,
@@ -5847,6 +6016,43 @@ html {
   .topbar-actions .topbar-language {
     grid-column: 1 / -1;
     justify-content: center;
+  }
+
+  .topbar-nav--console {
+    position: fixed;
+    left: 0.72rem;
+    right: 0.72rem;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.72rem);
+    z-index: 30;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.45rem;
+    padding: 0.5rem;
+    border-radius: 24px;
+    background: color-mix(in srgb, var(--paper) 90%, transparent);
+    border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+    box-shadow: 0 22px 50px rgba(0, 0, 0, 0.38);
+    backdrop-filter: blur(18px);
+  }
+
+  .topbar-nav--console .switch-pill {
+    min-height: 56px;
+    padding: 0.5rem 0.35rem;
+    border-radius: 18px;
+    font-size: 0.72rem;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    white-space: normal;
+    background: transparent;
+    border-color: transparent;
+  }
+
+  .topbar-nav--console .switch-pill.active {
+    background: color-mix(in srgb, var(--accent-soft) 34%, var(--paper-strong));
+    border-color: color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+
+  .shell-console--redesigned {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6.8rem);
   }
 
   .topbar--console .topbar-actions button,

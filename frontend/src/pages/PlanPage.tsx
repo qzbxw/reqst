@@ -5,227 +5,159 @@ type Variant = "dev" | "enterprise";
 
 const COPY = {
   ru: {
-    back: "На главную",
-    auth: "Войти в Reqst",
-    console: "Открыть консоль",
-    billing: "Открыть оплату",
-    compareTitle: "Что входит",
-    flowTitle: "Как это работает",
-    fitTitle: "Кому подойдёт",
-    faqTitle: "Частые вопросы",
+    back: "Назад",
+    auth: "Войти",
+    console: "Консоль",
+    billing: "Оплатить",
+    compareTitle: "В комплекте",
+    flowTitle: "Запуск",
+    fitTitle: "Кому",
+    faqTitle: "FAQ",
     dev: {
       badge: "Reqst Dev",
-      title: "API-интеграция для продуктовых команд.",
-      body: "Self-serve решение для быстрого запуска приема крипто-платежей. Мгновенная активация доступа, выпуск ключей и настройка вебхуков без участия sales-отдела.",
+      title: "API-интеграция для продуктов.",
+      body: "Self-serve доступ к API, выпуск ключей и настройка вебхуков без участия sales-отдела.",
       price: "149 USDT / 30 дней",
-      bullets: ["До 3 активных ключей", "До 50 000 запросов в месяц", "До 90 запросов в минуту на ключ", "Единая панель управления нагрузкой"],
+      bullets: ["3 ключа", "50k запросов/мес", "90 RPM/ключ"],
       stats: [
-        { value: "3", label: "активных ключа" },
-        { value: "50k", label: "запросов в месяц" },
-        { value: "90 rpm", label: "лимит на ключ" },
+        { value: "3", label: "ключа" },
+        { value: "50k", label: "запросов/мес" },
+        { value: "90 rpm", label: "лимит" },
       ],
       sections: [
         {
-          title: "Продуктовые команды",
-          body: "Решение для глубокой интеграции в личные кабинеты, SaaS-платформы или внутренние админ-панели.",
+          title: "Интеграция",
+          body: "Для SaaS-платформ и внутренних сервисов.",
         },
         {
-          title: "Мгновенный старт",
-          body: "Активация доступа происходит автоматически после оплаты инвойса внутри Reqst. Никаких анкет и долгих согласований.",
+          title: "Мгновенно",
+          body: "Активация сразу после оплаты.",
         },
         {
-          title: "Единый рабочий контур",
-          body: "Ключи, квоты, лимиты, биллинг и точки уведомлений собраны в одном интерфейсе управления.",
+          title: "Контроль",
+          body: "Ключи и квоты в одной панели.",
         },
       ],
       flow: [
-        "Авторизация в кабинете и создание инвойса за план.",
-        "Автоматическое открытие доступа после подтверждения платежа.",
-        "Выпуск API-ключа и настройка адреса для вебхуков.",
+        "Создание инвойса на оплату плана.",
+        "Автоматическое открытие доступа.",
+        "Выпуск ключей и настройка вебхуков.",
       ],
-      fit: [
-        "Сервисы по подписке, требующие автоматизации выставления счетов.",
-        "Команды, интегрирующие статус оплаты в логику своего продукта.",
-        "Интеграторы, которым нужен надежный блокчейн-мониторинг без разработки своего решения.",
-      ],
-      faq: [
-        {
-          question: "Нужен ли договор или звонок с sales-отделом?",
-          answer: "Нет. План активируется самостоятельно через интерфейс Reqst.",
-        },
-        {
-          question: "Где хранятся средства клиентов?",
-          answer: "Средства поступают напрямую на ваши реквизиты. Reqst не участвует в расчетах и не удерживает балансы.",
-        },
-        {
-          question: "Какие инструменты доступны кроме API?",
-          answer: "Управление лимитами, отслеживание нагрузки, настройка точек доставки уведомлений и мониторинг связанных оплат.",
-        },
-      ],
-      tone: "Эффективный запуск интеграции без бюрократии.",
+      fit: [],
+      faq: [],
+      tone: "Эффективный запуск.",
     },
     enterprise: {
       badge: "Reqst Enterprise",
-      title: "Инфраструктурный уровень для масштабирования.",
-      body: "Решение для высокой нагрузки и командной работы. Расширенные лимиты, приоритетная доставка уведомлений и полный контроль операционного контура.",
+      title: "B2B инфраструктура.",
+      body: "Решение для высокой нагрузки. Расширенные лимиты и приоритетная доставка уведомлений.",
       price: "499 USDT / 30 дней",
-      bullets: ["До 20 активных ключей", "До 500 000 запросов в месяц", "До 600 запросов в минуту на ключ", "Приоритетный контур доставки и поддержки"],
+      bullets: ["20 ключей", "500k запросов/мес", "600 RPM/ключ"],
       stats: [
-        { value: "20", label: "активных ключей" },
-        { value: "500k", label: "запросов в месяц" },
-        { value: "600 rpm", label: "лимит на ключ" },
+        { value: "20", label: "ключей" },
+        { value: "500k", label: "запросов/мес" },
+        { value: "600 rpm", label: "лимит" },
       ],
       sections: [
         {
-          title: "Высокая нагрузка",
-          body: "Поддержка стабильного потока инвойсов и автоматических обновлений статусов в реальном времени.",
+          title: "Нагрузка",
+          body: "Для систем с большим объемом транзакций.",
         },
         {
-          title: "Разделение окружений",
-          body: "Запас по ключам позволяет изолировать продакшн, стейджинг и различные продуктовые направления.",
+          title: "Команды",
+          body: "Разделение продакшн и стейджинг окружений.",
         },
         {
-          title: "Операционная устойчивость",
-          body: "Широкие лимиты и приоритетная обработка для критичных бизнес-процессов, где важна скорость каждой транзакции.",
+          title: "Стабильность",
+          body: "Приоритетная обработка и поддержка.",
         },
       ],
       flow: [
-        "Активация Enterprise плана через штатный биллинг Reqst.",
-        "Мгновенное обновление лимитов и открытие доступа к полному функционалу.",
-        "Распределение ключей по сервисам и настройка приоритетных эндпоинтов.",
+        "Оплата Enterprise плана.",
+        "Мгновенное обновление лимитов.",
+        "Распределение ключей по сервисам.",
       ],
-      fit: [
-        "Платформы с большим объемом ежедневных транзакций.",
-        "Команды с необходимостью разделения доступов между отделами или продуктами.",
-        "Проекты, в которых скорость доставки вебхуков критична для работы сервиса.",
-      ],
-      faq: [
-        {
-          question: "Это кастомное решение через отдел продаж?",
-          answer: "Нет. Это по-прежнему self-serve план с автоматической активацией через оплату.",
-        },
-        {
-          question: "В чем главное преимущество перед Dev-планом?",
-          answer: "В повышенной устойчивости контура, расширенном запасе квот и приоритетной обработке событий.",
-        },
-        {
-          question: "Подходит ли план для небольших команд?",
-          answer: "Да, если сложность внутренних процессов или объем трафика требуют повышенной стабильности.",
-        },
-      ],
-      tone: "Решение для команд, где платежи — критическая часть инфраструктуры.",
+      fit: [],
+      faq: [],
+      tone: "Критическая инфраструктура.",
     },
   },
   en: {
-    back: "Back home",
-    auth: "Sign in to Reqst",
-    console: "Open console",
-    billing: "Open billing",
-    compareTitle: "What is included",
-    flowTitle: "How it works",
-    fitTitle: "Who it fits",
-    faqTitle: "Common questions",
+    back: "Back",
+    auth: "Login",
+    console: "Console",
+    billing: "Upgrade",
+    compareTitle: "Included",
+    flowTitle: "Setup",
+    fitTitle: "Fit",
+    faqTitle: "FAQ",
     dev: {
       badge: "Reqst Dev",
-      title: "A compact API layer for teams that need crypto payments inside their product.",
-      body: "Reqst Dev gives product teams a self-serve path: activate the plan, issue keys, connect delivery endpoints, and start generating invoices from your own app.",
+      title: "API for product teams.",
+      body: "Self-serve API access, key management, and webhooks without sales friction.",
       price: "149 USDT / 30 days",
-      bullets: ["Up to 3 active keys", "Up to 50,000 requests per month", "Up to 90 requests per minute per key", "Usage controls and delivery endpoints in one console"],
+      bullets: ["3 keys", "50k req/mo", "90 RPM/key"],
       stats: [
-        { value: "3", label: "active keys" },
-        { value: "50k", label: "monthly requests" },
-        { value: "90 rpm", label: "per-key limit" },
+        { value: "3", label: "keys" },
+        { value: "50k", label: "req/mo" },
+        { value: "90 rpm", label: "limit" },
       ],
       sections: [
         {
-          title: "Built for product teams",
-          body: "Useful when invoice creation needs to live inside your own dashboard, subscription flow, or internal tooling.",
+          title: "Product",
+          body: "For SaaS and internal tools.",
         },
         {
-          title: "Fast activation",
-          body: "The plan is activated through a normal Reqst billing flow, without manual sales steps.",
+          title: "Instant",
+          body: "Access enabled after payment.",
         },
         {
-          title: "One operating surface",
-          body: "Keys, limits, invoice billing links, and event delivery live in one place.",
+          title: "One UI",
+          body: "Keys and quotas in one place.",
         },
       ],
       flow: [
-        "Sign in and create a billing checkout.",
-        "After payment confirmation, API access is enabled automatically.",
-        "Create a key, connect endpoints, and start issuing invoices from your product.",
+        "Create billing checkout.",
+        "Access unlocks automatically.",
+        "Issue keys and connect webhooks.",
       ],
-      fit: [
-        "Subscription services that need automated invoice creation.",
-        "Teams connecting payment status to internal product logic.",
-        "Integrators who want a ready crypto payment layer without building blockchain monitoring.",
-      ],
-      faq: [
-        {
-          question: "Do I need a contract or a call?",
-          answer: "No. It is a self-serve plan with direct activation.",
-        },
-        {
-          question: "Where do customer funds go?",
-          answer: "Directly to your wallet. Reqst does not custody balances.",
-        },
-        {
-          question: "What comes with the API access?",
-          answer: "Key management, usage visibility, delivery endpoints, and billing links live in the same console.",
-        },
-      ],
-      tone: "A plan for launching integrations without extra process overhead.",
+      fit: [],
+      faq: [],
+      tone: "Fast integration.",
     },
     enterprise: {
       badge: "Reqst Enterprise",
-      title: "A stricter B2B operating layer for teams that have outgrown a basic API plan.",
-      body: "Reqst Enterprise is for higher load, more internal services, and stronger delivery expectations. It keeps the same direct-to-wallet payment model, but adds wider limits and a steadier operating setup.",
+      title: "B2B Infrastructure.",
+      body: "Built for high load and multi-team setups. Expanded limits and priority delivery.",
       price: "499 USDT / 30 days",
-      bullets: ["Up to 20 active keys", "Up to 500,000 requests per month", "Up to 600 requests per minute per key", "Priority delivery and support path"],
+      bullets: ["20 keys", "500k req/mo", "600 RPM/key"],
       stats: [
-        { value: "20", label: "active keys" },
-        { value: "500k", label: "monthly requests" },
-        { value: "600 rpm", label: "per-key limit" },
+        { value: "20", label: "keys" },
+        { value: "500k", label: "req/mo" },
+        { value: "600 rpm", label: "limit" },
       ],
       sections: [
         {
-          title: "For high-load systems",
-          body: "Useful when invoices are generated across several services and status updates need to move cleanly through your stack.",
+          title: "High Load",
+          body: "For high-volume transaction systems.",
         },
         {
-          title: "For multi-team setups",
-          body: "When multiple products, environments, or teams share the same billing surface, the headroom on keys and limits becomes operationally important.",
+          title: "Multi-team",
+          body: "Isolate prod, staging, and services.",
         },
         {
-          title: "For steadier operations",
-          body: "A broader limit profile and priority delivery path matter when payment events affect revenue, support, and daily operations.",
+          title: "Reliability",
+          body: "Priority delivery and processing.",
         },
       ],
       flow: [
-        "Create an Enterprise billing checkout inside Reqst.",
-        "After payment confirmation, expanded limits are enabled automatically.",
-        "Split keys across environments and services without constantly managing around caps.",
+        "Pay Enterprise checkout.",
+        "Limits update immediately.",
+        "Distribute keys across services.",
       ],
-      fit: [
-        "Platforms with larger payment volume and multiple backend services.",
-        "Teams that separate prod, staging, and different product lines.",
-        "Projects where payment status delivery is critical to daily operations.",
-      ],
-      faq: [
-        {
-          question: "Is this a custom sales-only plan?",
-          answer: "No. It still uses a self-serve activation flow inside Reqst.",
-        },
-        {
-          question: "What changes in practice?",
-          answer: "The main difference is more room on limits, more keys, and a stronger operating profile for larger teams.",
-        },
-        {
-          question: "Is it only for very large companies?",
-          answer: "No. It is for teams with higher operational complexity, not just bigger brand size.",
-        },
-      ],
-      tone: "A plan for mature teams where payments are part of critical infrastructure.",
+      fit: [],
+      faq: [],
+      tone: "Critical ops.",
     },
   },
 } as const;
@@ -306,7 +238,7 @@ export function PlanPage({ variant }: { variant: Variant }) {
             <strong className="plan-page__price-strong">{product.price.split(" / ")[0]}</strong>
             <div className="network-badge">
               <b>{product.price.split(" / ")[1]}</b>
-              <small>{language === "ru" ? "период доступа" : "access period"}</small>
+              <small>{language === "ru" ? "период" : "period"}</small>
             </div>
           </div>
 
@@ -317,20 +249,6 @@ export function PlanPage({ variant }: { variant: Variant }) {
                 <div key={item} className="detail-row plan-page__detail-row">
                   <div className="plan-page__timeline-item">
                     <strong className="plan-page__timeline-index">{String(index + 1).padStart(2, "0")}</strong>
-                    <p className="page-copy-reset">{item}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <article className="checkout-card checkout-card--lux plan-page__side-card">
-            <span className="receipt-brandline plan-page__section-label">{text.fitTitle}</span>
-            <div className="plan-page__fit-list">
-              {product.fit.map((item) => (
-                <div key={item} className="detail-row plan-page__fit-row">
-                  <div className="plan-page__fit-item">
-                    <span />
                     <p className="page-copy-reset">{item}</p>
                   </div>
                 </div>
