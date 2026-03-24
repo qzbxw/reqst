@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,6 +20,22 @@ var ErrNotFound = errors.New("not found")
 type Store struct {
 	pool *pgxpool.Pool
 }
+
+const sellerSelectColumns = `
+	id,
+	telegram_id,
+	COALESCE(username, ''),
+	COALESCE(email, ''),
+	default_network,
+	subscription_ends_at,
+	free_invoices_used,
+	is_blocked,
+	email_verified_at,
+	telegram_linked_at,
+	COALESCE(password_hash, ''),
+	(password_hash IS NOT NULL AND BTRIM(password_hash) <> ''),
+	created_at
+`
 
 func New(ctx context.Context, databaseURL string) (*Store, error) {
 	pool, err := pgxpool.New(ctx, databaseURL)
@@ -45,19 +62,31 @@ func (s *Store) Close() {
 
 func (s *Store) UpsertSellerByTelegram(ctx context.Context, telegramID int64, username string) (Seller, error) {
 	row := s.pool.QueryRow(ctx, `
-		INSERT INTO sellers (telegram_id, username)
-		VALUES ($1, NULLIF($2, ''))
+		INSERT INTO sellers (telegram_id, username, telegram_linked_at)
+		VALUES ($1, NULLIF($2, ''), NOW())
 		ON CONFLICT (telegram_id)
-		DO UPDATE SET username = COALESCE(NULLIF(EXCLUDED.username, ''), sellers.username)
-		RETURNING id, telegram_id, COALESCE(username, ''), COALESCE(email, ''), default_network, subscription_ends_at, free_invoices_used, is_blocked, created_at
+		DO UPDATE SET
+			username = COALESCE(NULLIF(EXCLUDED.username, ''), sellers.username),
+			telegram_linked_at = COALESCE(sellers.telegram_linked_at, NOW())
+		RETURNING `+sellerSelectColumns+`
 	`, telegramID, username)
+
+	return scanSeller(row)
+}
+
+func (s *Store) CreateSellerWithEmail(ctx context.Context, email string, passwordHash string, verifiedAt time.Time) (Seller, error) {
+	row := s.pool.QueryRow(ctx, `
+		INSERT INTO sellers (email, password_hash, email_verified_at)
+		VALUES (NULLIF($1, ''), $2, $3)
+		RETURNING `+sellerSelectColumns+`
+	`, email, passwordHash, verifiedAt)
 
 	return scanSeller(row)
 }
 
 func (s *Store) GetSellerByID(ctx context.Context, sellerID int64) (Seller, error) {
 	row := s.pool.QueryRow(ctx, `
-		SELECT id, telegram_id, COALESCE(username, ''), COALESCE(email, ''), default_network, subscription_ends_at, free_invoices_used, is_blocked, created_at
+		SELECT `+sellerSelectColumns+`
 		FROM sellers
 		WHERE id = $1
 	`, sellerID)
@@ -66,10 +95,19 @@ func (s *Store) GetSellerByID(ctx context.Context, sellerID int64) (Seller, erro
 
 func (s *Store) GetSellerByTelegramID(ctx context.Context, telegramID int64) (Seller, error) {
 	row := s.pool.QueryRow(ctx, `
-		SELECT id, telegram_id, COALESCE(username, ''), COALESCE(email, ''), default_network, subscription_ends_at, free_invoices_used, is_blocked, created_at
+		SELECT `+sellerSelectColumns+`
 		FROM sellers
 		WHERE telegram_id = $1
 	`, telegramID)
+	return scanSeller(row)
+}
+
+func (s *Store) GetSellerByEmail(ctx context.Context, email string) (Seller, error) {
+	row := s.pool.QueryRow(ctx, `
+		SELECT `+sellerSelectColumns+`
+		FROM sellers
+		WHERE LOWER(email) = LOWER($1)
+	`, email)
 	return scanSeller(row)
 }
 
@@ -82,7 +120,7 @@ func (s *Store) GrantPRO(ctx context.Context, sellerID int64, days int) (Seller,
 		UPDATE sellers
 		SET subscription_ends_at = GREATEST(COALESCE(subscription_ends_at, NOW()), NOW()) + ($2 || ' days')::interval
 		WHERE id = $1
-		RETURNING id, telegram_id, COALESCE(username, ''), COALESCE(email, ''), default_network, subscription_ends_at, free_invoices_used, is_blocked, created_at
+		RETURNING `+sellerSelectColumns+`
 	`, sellerID, days)
 	return scanSeller(row)
 }
@@ -92,7 +130,7 @@ func (s *Store) SetSellerBlocked(ctx context.Context, sellerID int64, blocked bo
 		UPDATE sellers
 		SET is_blocked = $2
 		WHERE id = $1
-		RETURNING id, telegram_id, COALESCE(username, ''), COALESCE(email, ''), default_network, subscription_ends_at, free_invoices_used, is_blocked, created_at
+		RETURNING `+sellerSelectColumns+`
 	`, sellerID, blocked)
 	return scanSeller(row)
 }
@@ -102,9 +140,114 @@ func (s *Store) UpdateSellerEmail(ctx context.Context, sellerID int64, email str
 		UPDATE sellers
 		SET email = NULLIF($2, '')
 		WHERE id = $1
-		RETURNING id, telegram_id, COALESCE(username, ''), COALESCE(email, ''), default_network, subscription_ends_at, free_invoices_used, is_blocked, created_at
+		RETURNING `+sellerSelectColumns+`
 	`, sellerID, email)
 	return scanSeller(row)
+}
+
+func (s *Store) SetSellerEmailCredentials(ctx context.Context, sellerID int64, email string, passwordHash string, verifiedAt time.Time) (Seller, error) {
+	row := s.pool.QueryRow(ctx, `
+		UPDATE sellers
+		SET email = NULLIF($2, ''),
+		    password_hash = $3,
+		    email_verified_at = $4
+		WHERE id = $1
+		RETURNING `+sellerSelectColumns+`
+	`, sellerID, email, passwordHash, verifiedAt)
+	return scanSeller(row)
+}
+
+func (s *Store) ResetSellerPassword(ctx context.Context, sellerID int64, passwordHash string) (Seller, error) {
+	row := s.pool.QueryRow(ctx, `
+		UPDATE sellers
+		SET password_hash = $2
+		WHERE id = $1
+		RETURNING `+sellerSelectColumns+`
+	`, sellerID, passwordHash)
+	return scanSeller(row)
+}
+
+func (s *Store) LinkTelegramToSeller(ctx context.Context, sellerID int64, telegramID int64, username string) (Seller, error) {
+	row := s.pool.QueryRow(ctx, `
+		UPDATE sellers
+		SET telegram_id = $2,
+		    username = COALESCE(NULLIF($3, ''), username),
+		    telegram_linked_at = COALESCE(telegram_linked_at, NOW())
+		WHERE id = $1
+		RETURNING `+sellerSelectColumns+`
+	`, sellerID, telegramID, username)
+	return scanSeller(row)
+}
+
+func (s *Store) StoreEmailAuthCode(ctx context.Context, sellerID *int64, email string, purpose string, codeHash string, expiresAt time.Time) error {
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin store email auth code tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	if _, err := tx.Exec(ctx, `
+		UPDATE email_auth_codes
+		SET consumed_at = NOW()
+		WHERE LOWER(email) = LOWER($1)
+		  AND purpose = $2
+		  AND consumed_at IS NULL
+	`, email, purpose); err != nil {
+		return fmt.Errorf("expire active email auth codes: %w", err)
+	}
+
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO email_auth_codes (seller_id, email, purpose, code_hash, expires_at)
+		VALUES ($1, $2, $3, $4, $5)
+	`, sellerID, email, purpose, codeHash, expiresAt); err != nil {
+		return fmt.Errorf("insert email auth code: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit email auth code: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) ConsumeEmailAuthCode(ctx context.Context, email string, purpose string, codeHash string) (*int64, error) {
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("begin consume email auth code tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	var sellerID sql.NullInt64
+	row := tx.QueryRow(ctx, `
+		UPDATE email_auth_codes
+		SET consumed_at = NOW()
+		WHERE id = (
+			SELECT id
+			FROM email_auth_codes
+			WHERE LOWER(email) = LOWER($1)
+			  AND purpose = $2
+			  AND code_hash = $3
+			  AND consumed_at IS NULL
+			  AND expires_at > NOW()
+			ORDER BY created_at DESC
+			LIMIT 1
+			FOR UPDATE
+		)
+		RETURNING seller_id
+	`, email, purpose, codeHash)
+	if err := row.Scan(&sellerID); errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	} else if err != nil {
+		return nil, fmt.Errorf("consume email auth code: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit consume email auth code: %w", err)
+	}
+	if sellerID.Valid {
+		value := sellerID.Int64
+		return &value, nil
+	}
+	return nil, nil
 }
 
 func (s *Store) ListWallets(ctx context.Context, sellerID int64) ([]Wallet, error) {
@@ -482,18 +625,20 @@ func (s *Store) CompleteInvoicePayment(ctx context.Context, invoiceID int64, txH
 		return Invoice{}, fmt.Errorf("update payment event match: %w", err)
 	}
 
-	var telegramID int64
+	var telegramID sql.NullInt64
 	if err := tx.QueryRow(ctx, `SELECT telegram_id FROM sellers WHERE id = $1`, invoice.SellerID).Scan(&telegramID); err != nil {
 		return Invoice{}, fmt.Errorf("load seller telegram id: %w", err)
 	}
 
-	message := buildInvoiceNotificationMessage(invoice, classification, observedAmount)
-	payload := buildInvoiceNotificationPayload(invoice, classification)
-	if _, err := tx.Exec(ctx, `
-		INSERT INTO notification_outbox (seller_id, recipient_telegram_id, message, payload)
-		VALUES ($1, $2, $3, $4)
-	`, invoice.SellerID, telegramID, message, payload); err != nil {
-		return Invoice{}, fmt.Errorf("queue seller notification: %w", err)
+	if telegramID.Valid {
+		message := buildInvoiceNotificationMessage(invoice, classification, observedAmount)
+		payload := buildInvoiceNotificationPayload(invoice, classification)
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO notification_outbox (seller_id, recipient_telegram_id, message, payload)
+			VALUES ($1, $2, $3, $4)
+		`, invoice.SellerID, telegramID.Int64, message, payload); err != nil {
+			return Invoice{}, fmt.Errorf("queue seller notification: %w", err)
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -541,6 +686,7 @@ func (s *Store) ClaimNotificationJobs(ctx context.Context, limit int) ([]Notific
 		SELECT id, seller_id, recipient_telegram_id, message, payload, attempts
 		FROM notification_outbox
 		WHERE status IN ('pending', 'failed')
+		  AND recipient_telegram_id IS NOT NULL
 		  AND available_at <= NOW()
 		ORDER BY created_at ASC
 		FOR UPDATE SKIP LOCKED
@@ -607,15 +753,20 @@ func (s *Store) MarkNotificationFailed(ctx context.Context, id int64, message st
 
 func scanSeller(row pgx.Row) (Seller, error) {
 	var seller Seller
+	var telegramID sql.NullInt64
 	err := row.Scan(
 		&seller.ID,
-		&seller.TelegramID,
+		&telegramID,
 		&seller.Username,
 		&seller.Email,
 		&seller.DefaultNetwork,
 		&seller.SubscriptionEndsAt,
 		&seller.FreeInvoicesUsed,
 		&seller.IsBlocked,
+		&seller.EmailVerifiedAt,
+		&seller.TelegramLinkedAt,
+		&seller.PasswordHash,
+		&seller.HasPassword,
 		&seller.CreatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -623,6 +774,10 @@ func scanSeller(row pgx.Row) (Seller, error) {
 	}
 	if err != nil {
 		return Seller{}, fmt.Errorf("scan seller: %w", err)
+	}
+	if telegramID.Valid {
+		value := telegramID.Int64
+		seller.TelegramID = &value
 	}
 	return seller, nil
 }
@@ -694,11 +849,11 @@ func buildInvoiceNotificationMessage(invoice Invoice, classification string, obs
 		return fmt.Sprintf("Invoice %s is paid. Received %s %s. Tx: %s", invoice.PublicID, received, invoice.PayableNetwork, valueOrEmpty(invoice.TxHash))
 	case InvoiceStatusUnderpaid:
 		if classification == "underpaid_fee_window" {
-			return fmt.Sprintf("Invoice %s likely hit an exchange fee. Received %s %s, expected %s %s. Decide whether to count it or wait for a top-up.", invoice.PublicID, received, invoice.PayableNetwork, expected, invoice.PayableNetwork)
+			return fmt.Sprintf("Invoice %s was likely affected by an exchange fee. Received %s %s, expected %s %s. Choose whether to accept the payment or wait for the remaining balance.", invoice.PublicID, received, invoice.PayableNetwork, expected, invoice.PayableNetwork)
 		}
-		return fmt.Sprintf("Invoice %s received %s %s instead of %s %s and needs manual action.", invoice.PublicID, received, invoice.PayableNetwork, expected, invoice.PayableNetwork)
+		return fmt.Sprintf("Invoice %s received %s %s instead of %s %s. Manual action required.", invoice.PublicID, received, invoice.PayableNetwork, expected, invoice.PayableNetwork)
 	case InvoiceStatusManualReview:
-		return fmt.Sprintf("Invoice %s received %s %s after expiry and moved to manual review.", invoice.PublicID, received, invoice.PayableNetwork)
+		return fmt.Sprintf("Invoice %s received %s %s after expiration. Status set to Manual Review.", invoice.PublicID, received, invoice.PayableNetwork)
 	default:
 		return fmt.Sprintf("Invoice %s changed status to %s.", invoice.PublicID, invoice.Status)
 	}

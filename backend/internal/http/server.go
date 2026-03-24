@@ -46,6 +46,11 @@ func NewServer(cfg config.Config, st *store.Store, authService *service.AuthServ
 	})
 
 	router.POST("/api/auth/telegram", server.handleTelegramAuth)
+	router.POST("/api/auth/email/request-code", server.handleEmailRegistrationCode)
+	router.POST("/api/auth/email/register", server.handleEmailRegister)
+	router.POST("/api/auth/email/login", server.handleEmailLogin)
+	router.POST("/api/auth/email/request-password-reset", server.handleEmailPasswordResetCode)
+	router.POST("/api/auth/email/reset-password", server.handleEmailResetPassword)
 	router.GET("/api/public/invoices/:public_id", server.handlePublicInvoice)
 
 	internal := router.Group("/internal")
@@ -64,6 +69,9 @@ func NewServer(cfg config.Config, st *store.Store, authService *service.AuthServ
 	api.Use(server.authMiddleware())
 	api.GET("/me", server.handleMe)
 	api.POST("/me/contact-email", server.handleUpdateContactEmail)
+	api.POST("/me/email-auth/request-code", server.handleEmailLinkRequest)
+	api.POST("/me/email-auth/confirm", server.handleEmailLinkConfirm)
+	api.POST("/me/telegram/link", server.handleTelegramLink)
 	api.GET("/wallets", server.handleListWallets)
 	api.POST("/wallets", server.handleCreateWallet)
 	api.DELETE("/wallets/:id", server.handleDeleteWallet)
@@ -84,9 +92,87 @@ func (s *Server) handleTelegramAuth(c *gin.Context) {
 		return
 	}
 
-	result, err := s.authService.Authenticate(c.Request.Context(), body)
+	result, err := s.authService.AuthenticateTelegram(c.Request.Context(), body)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+func (s *Server) handleEmailRegistrationCode(c *gin.Context) {
+	var body service.EmailCodeRequestInput
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := s.authService.RequestRegistrationCode(c.Request.Context(), body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+func (s *Server) handleEmailRegister(c *gin.Context) {
+	var body service.EmailRegisterInput
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	result, err := s.authService.RegisterWithEmail(c.Request.Context(), body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+func (s *Server) handleEmailLogin(c *gin.Context) {
+	var body service.EmailLoginInput
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	result, err := s.authService.AuthenticateEmail(c.Request.Context(), body)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+func (s *Server) handleEmailPasswordResetCode(c *gin.Context) {
+	var body service.EmailCodeRequestInput
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := s.authService.RequestPasswordResetCode(c.Request.Context(), body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+func (s *Server) handleEmailResetPassword(c *gin.Context) {
+	var body service.EmailPasswordResetInput
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	result, err := s.authService.ResetPassword(c.Request.Context(), body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -133,6 +219,56 @@ func (s *Server) handleUpdateContactEmail(c *gin.Context) {
 			status = http.StatusConflict
 		}
 		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"seller": seller})
+}
+
+func (s *Server) handleEmailLinkRequest(c *gin.Context) {
+	sc := sellerFromContext(c)
+	var body service.EmailCodeRequestInput
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := s.authService.RequestEmailLinkCode(c.Request.Context(), sc.Seller, body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+func (s *Server) handleEmailLinkConfirm(c *gin.Context) {
+	sc := sellerFromContext(c)
+	var body service.EmailRegisterInput
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	seller, err := s.authService.ConfirmEmailLink(c.Request.Context(), sc.Seller, body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"seller": seller})
+}
+
+func (s *Server) handleTelegramLink(c *gin.Context) {
+	sc := sellerFromContext(c)
+	var body service.TelegramAuthInput
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	seller, err := s.authService.LinkTelegram(c.Request.Context(), sc.Seller, body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

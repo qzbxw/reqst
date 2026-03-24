@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -23,6 +24,12 @@ type Config struct {
 	TonCenterBaseURL     string
 	TonCenterAPIKey      string
 	TonUSDOverride       string
+	SMTPHost             string
+	SMTPPort             string
+	SMTPUsername         string
+	SMTPPassword         string
+	SMTPFromEmail        string
+	SMTPFromName         string
 }
 
 func Load() (Config, error) {
@@ -40,6 +47,12 @@ func Load() (Config, error) {
 		TonCenterBaseURL:     envOrDefault("TONCENTER_BASE_URL", "https://toncenter.com/api/v2"),
 		TonCenterAPIKey:      os.Getenv("TONCENTER_API_KEY"),
 		TonUSDOverride:       os.Getenv("TON_USD_RATE"),
+		SMTPHost:             strings.TrimSpace(os.Getenv("SMTP_HOST")),
+		SMTPPort:             envOrDefault("SMTP_PORT", "587"),
+		SMTPUsername:         os.Getenv("SMTP_USERNAME"),
+		SMTPPassword:         os.Getenv("SMTP_PASSWORD"),
+		SMTPFromEmail:        strings.TrimSpace(os.Getenv("SMTP_FROM_EMAIL")),
+		SMTPFromName:         strings.TrimSpace(envOrDefault("SMTP_FROM_NAME", "reqst")),
 	}
 
 	if cfg.DatabaseURL == "" {

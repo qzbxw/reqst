@@ -506,7 +506,7 @@ func (b *BotWorker) renderHome(ctx context.Context, seller store.Seller, chatID 
 
 	text := fmt.Sprintf(
 		"reqst seller bot\n\nSeller: @%s\nWallets: %d\nLatest: %s\n\nUse the buttons below or open reqst.",
-		valueOrFallback(seller.Username, strconv.FormatInt(seller.TelegramID, 10)),
+		valueOrFallback(seller.Username, sellerTelegramLabel(seller.TelegramID)),
 		len(wallets),
 		latest,
 	)
@@ -519,6 +519,13 @@ func (b *BotWorker) renderHome(ctx context.Context, seller store.Seller, chatID 
 			{Text: "Unlock PRO", CallbackData: "screen:upgrade"},
 		},
 	}))
+}
+
+func sellerTelegramLabel(telegramID *int64) string {
+	if telegramID == nil {
+		return "unlinked"
+	}
+	return strconv.FormatInt(*telegramID, 10)
 }
 
 func (b *BotWorker) renderWallets(ctx context.Context, seller store.Seller, chatID int64, messageID int64, note string) error {

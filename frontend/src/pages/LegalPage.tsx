@@ -24,7 +24,7 @@ const COPY = {
       kicker: "PRIVACY POLICY",
       title: "Privacy Policy для reqst",
       summary:
-        "Это рабочий черновик privacy-страницы под текущий MVP. Он отражает реальное поведение кода: Telegram auth, seller wallets, invoice metadata, public checkout, payment monitoring и seller notifications. Перед публикацией просто замени реквизиты оператора и финальные юридические параметры.",
+        "Это рабочий черновик privacy-страницы под текущий MVP. Он отражает реальное поведение кода: авторизацию через Telegram, кошельки продавцов, метаданные инвойсов, публичные страницы оплаты, мониторинг платежей и уведомления. Перед публикацией просто замените реквизиты оператора и финальные юридические параметры.",
       updatedLabel: "Последнее обновление",
       operatorLabel: "Оператор сервиса",
       draftTitle: "Что заполнить перед публикацией",
@@ -45,11 +45,11 @@ const COPY = {
             "В зависимости от сценария это может включать Telegram ID, username, seller account metadata, payout wallet addresses, invoice titles и amounts, payment status data, tx hashes, публичные on-chain сведения, а также технические данные браузера и local storage keys, которые используются для сохранения темы, языка и seller session token.",
           ],
           bullets: [
-            "данные Telegram Mini App auth или dev-auth payload",
-            "wallet addresses, network selection и invoice metadata",
-            "public invoice identifiers, payment comments и payment URIs",
-            "наблюдаемые on-chain события, включая tx hash, amount, network, observed time и raw provider payload",
-            "seller notification payloads и operational logs",
+            "данные авторизации Telegram Mini App или отладочный payload",
+            "адреса кошельков, выбор сети и метаданные инвойса",
+            "публичные идентификаторы инвойсов, комментарии к платежам и платежные URI",
+            "наблюдаемые события в блокчейне, включая хеш транзакции, сумму, сеть, время и необработанные данные провайдера",
+            "данные уведомлений продавца и операционные логи",
           ],
         },
         {
@@ -220,7 +220,7 @@ const COPY = {
       kicker: "TERMS OF SERVICE",
       title: "Terms of Service для reqst",
       summary:
-        "Это черновик пользовательских условий под фактический продукт: seller console, checkout links, payment matching, PRO subscription и non-custodial модель. Документ уже нормальный по структуре, но тебе нужно подставить свои реквизиты, правила refund и юрисдикцию.",
+        "Это черновик пользовательских условий под фактический продукт: панель управления, ссылки на оплату, сопоставление платежей, подписка PRO и некастодиальная модель. Документ уже готов по структуре, но вам нужно подставить свои реквизиты, правила возврата и юрисдикцию.",
       updatedLabel: "Последнее обновление",
       operatorLabel: "Оператор сервиса",
       draftTitle: "Что заполнить перед публикацией",

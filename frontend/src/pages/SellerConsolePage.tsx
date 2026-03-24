@@ -4,6 +4,7 @@ import { CustomSelect } from "../components/CustomSelect";
 import {
   cancelInvoice,
   clearStoredToken,
+  confirmEmailLink,
   createBillingCheckout,
   createInvoice,
   createWallet,
@@ -12,8 +13,9 @@ import {
   fetchMe,
   fetchWallets,
   getStoredToken,
+  linkTelegram,
   markInvoicePaid,
-  updateContactEmail,
+  requestEmailLinkCode,
 } from "../lib/api";
 import type { Invoice, MeResponse, Network, Wallet } from "../lib/types";
 import { useUI } from "../lib/ui";
@@ -27,6 +29,7 @@ declare global {
         expand?: () => void;
       };
     };
+    onTelegramLinkAuth?: (user: Record<string, string | number>) => Promise<void>;
   }
 }
 
@@ -64,7 +67,7 @@ const COPY = {
       orders: "Инвойсы",
     },
     authTitle: "Вход продавца",
-    authCopy: "Консоль теперь живет отдельно. Для входа открой auth flow и продолжи через Telegram.",
+    authCopy: "Для входа в панель управления используйте авторизацию через Telegram.",
     telegramId: "Telegram ID",
     username: "Username",
     signIn: "Войти",
@@ -79,19 +82,19 @@ const COPY = {
     totalInvoices: "Всего создано",
     trialLeft: "Осталось инвойсов",
     unlockPro: "Reqst PRO",
-    unlockCopy: "Когда бесплатные инвойсы закончатся, новые ссылки остановятся. Без комиссии с оборота, только фиксированный доступ.",
+    unlockCopy: "После исчерпания лимита бесплатных инвойсов создание новых ссылок будет приостановлено. Без комиссии с оборота, только фиксированный доступ.",
     unlockPrice: "39 USDT / 30 дней",
     billingNetwork: "Сеть оплаты",
     unlockNow: "Оплатить PRO",
     paywallTitle: "Триал закончился",
-    paywallBody: "Новые инвойсы остановлены. Оплати PRO и сразу верни безлимит на 30 дней.",
+    paywallBody: "Лимит инвойсов исчерпан. Оплатите PRO, чтобы получить безлимитный доступ на 30 дней.",
     recentInvoice: "Последний инвойс",
     noRecentInvoice: "Пока ещё нет ни одного инвойса.",
     freshLink: "Свежая ссылка",
     open: "Открыть",
     copy: "Скопировать",
     logout: "Выйти",
-    theme: { light: "Свет", dark: "Тьма" },
+    theme: { light: "Светлая", dark: "Темная" },
     language: { ru: "РУ", en: "EN" },
     walletTitle: "Кошельки",
     walletCopy: "Один активный адрес на каждую платёжную группу. Общий EVM-адрес используется для Ethereum, Base, Arbitrum и BSC.",
@@ -124,11 +127,27 @@ const COPY = {
     walletCoverageTitle: "Сети",
     walletCoverageCopy: "Активные направления для приема платежей.",
     sellerIdLabel: "Seller ID",
-    emailLabel: "Email для уведомлений",
+    emailLabel: "Email для входа",
     emailPlaceholder: "vlad@example.com",
-    saveEmail: "Обновить",
-    savingEmail: "Сохранение...",
-    emailLinked: "Почта используется для уведомлений и восстановления доступа",
+    passwordLabel: "Пароль",
+    passwordPlaceholder: "Минимум 8 символов",
+    codeLabel: "Код из письма",
+    codePlaceholder: "123456",
+    saveEmail: "Подтвердить email-вход",
+    savingEmail: "Подключаем...",
+    sendCode: "Отправить код",
+    sendingCode: "Отправляем...",
+    emailLinked: "Email и пароль уже подключены к этому аккаунту",
+    emailAccessTitle: "Email + пароль",
+    emailAccessCopy: "Добавьте email/password к текущему аккаунту, чтобы входить не только через Telegram.",
+    emailAccessReady: "Email-вход уже активен для этого аккаунта.",
+    telegramAccessTitle: "Telegram",
+    telegramAccessCopy: "Привяжите Telegram к этому аккаунту, чтобы один и тот же профиль работал и в боте, и через email/password.",
+    telegramLinked: "Telegram привязан",
+    telegramMissing: "Telegram пока не привязан",
+    telegramLinkHint: "Используйте Telegram Login Widget ниже, чтобы связать текущий аккаунт с Telegram.",
+    telegramLinkAction: "Привязать Telegram из Mini App",
+    accessCodeSent: "Код отправлен на почту. Введите его и завершите привязку.",
     defaultNetwork: "Основная сеть",
     walletReady: "Активен",
     walletMissing: "Не настроен",
@@ -206,11 +225,27 @@ const COPY = {
     walletCoverageTitle: "Payout Lanes",
     walletCoverageCopy: "Active networks ready to receive funds.",
     sellerIdLabel: "Seller ID",
-    emailLabel: "Email Address",
+    emailLabel: "Email login",
     emailPlaceholder: "name@company.com",
-    saveEmail: "Update Email",
-    savingEmail: "Updating...",
-    emailLinked: "Email linked",
+    passwordLabel: "Password",
+    passwordPlaceholder: "At least 8 characters",
+    codeLabel: "Email code",
+    codePlaceholder: "123456",
+    saveEmail: "Enable email login",
+    savingEmail: "Saving...",
+    sendCode: "Send code",
+    sendingCode: "Sending...",
+    emailLinked: "Email/password access is already active for this account",
+    emailAccessTitle: "Email + password",
+    emailAccessCopy: "Add email/password to the current account so you can sign in without relying only on Telegram.",
+    emailAccessReady: "Email login is already active for this account.",
+    telegramAccessTitle: "Telegram",
+    telegramAccessCopy: "Link Telegram to this account so the same seller profile works in the bot and with email/password.",
+    telegramLinked: "Telegram linked",
+    telegramMissing: "Telegram not linked yet",
+    telegramLinkHint: "Use the Telegram Login Widget below to attach Telegram to the current account.",
+    telegramLinkAction: "Link Telegram from Mini App",
+    accessCodeSent: "Code sent to email. Enter it below to finish linking.",
     defaultNetwork: "Primary Network",
     walletReady: "Active",
     walletMissing: "Missing",
@@ -275,8 +310,11 @@ export function SellerConsolePage() {
   const text = COPY[language];
   const [session, setSession] = useState<SessionState | null>(null);
   const [error, setError] = useState("");
+  const [accountMessage, setAccountMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [savingEmail, setSavingEmail] = useState(false);
+  const [sendingEmailCode, setSendingEmailCode] = useState(false);
+  const [linkingTelegram, setLinkingTelegram] = useState(false);
   const [activePanel, setActivePanel] = useState<PanelKey>("overview");
   const [freshLink, setFreshLink] = useState("");
   const [walletForm, setWalletForm] = useState<{ network: Network; address: string }>({ network: "TON", address: "" });
@@ -287,7 +325,11 @@ export function SellerConsolePage() {
     expiresInMinutes: 30,
   });
   const [billingNetwork, setBillingNetwork] = useState<Network>("TRON");
-  const [emailForm, setEmailForm] = useState("");
+  const [emailForm, setEmailForm] = useState({
+    email: "",
+    code: "",
+    password: "",
+  });
 
   useEffect(() => {
     window.Telegram?.WebApp?.ready?.();
@@ -327,7 +369,11 @@ export function SellerConsolePage() {
         wallets: wallets.items ?? [],
         invoices: invoices.items ?? [],
       });
-      setEmailForm(me.seller.email ?? "");
+      setEmailForm({
+        email: me.seller.email ?? "",
+        code: "",
+        password: "",
+      });
       setError("");
     } catch (err) {
       clearStoredToken();
@@ -430,9 +476,27 @@ export function SellerConsolePage() {
   function handleLogout() {
     clearStoredToken();
     setSession(null);
-    setEmailForm("");
+    setEmailForm({ email: "", code: "", password: "" });
     setFreshLink("");
     setActivePanel("overview");
+    setAccountMessage("");
+  }
+
+  async function handleEmailCodeRequest() {
+    if (!session) {
+      return;
+    }
+    try {
+      setSendingEmailCode(true);
+      await requestEmailLinkCode(session.token, { email: emailForm.email.trim() });
+      setError("");
+      setAccountMessage(text.accessCodeSent);
+    } catch (err) {
+      setError((err as Error).message);
+      setAccountMessage("");
+    } finally {
+      setSendingEmailCode(false);
+    }
   }
 
   async function handleEmailSave(event: FormEvent) {
@@ -442,7 +506,11 @@ export function SellerConsolePage() {
     }
     try {
       setSavingEmail(true);
-      const result = await updateContactEmail(session.token, { email: emailForm.trim() });
+      const result = await confirmEmailLink(session.token, {
+        email: emailForm.email.trim(),
+        code: emailForm.code.trim(),
+        password: emailForm.password,
+      });
       setSession((current) => current ? {
         ...current,
         me: {
@@ -450,19 +518,98 @@ export function SellerConsolePage() {
           seller: result.seller,
         },
       } : current);
-      setEmailForm(result.seller.email ?? "");
+      setEmailForm((current) => ({
+        ...current,
+        email: result.seller.email ?? current.email,
+        code: "",
+        password: "",
+      }));
       setError("");
+      setAccountMessage(text.emailLinked);
     } catch (err) {
       setError((err as Error).message);
+      setAccountMessage("");
     } finally {
       setSavingEmail(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!session || session.me.seller.telegram_id) {
+      const existing = document.getElementById("console-telegram-link-container");
+      if (existing) {
+        existing.innerHTML = "";
+      }
+      delete window.onTelegramLinkAuth;
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://telegram.org/js/telegram-widget.js?22";
+    script.setAttribute("data-telegram-login", "reqstxyz_bot");
+    script.setAttribute("data-size", "large");
+    script.setAttribute("data-radius", "12");
+    script.setAttribute("data-onauth", "onTelegramLinkAuth(user)");
+    script.setAttribute("data-request-access", "write");
+    script.async = true;
+
+    const container = document.getElementById("console-telegram-link-container");
+    if (container) {
+      container.innerHTML = "";
+      container.appendChild(script);
+    }
+
+    window.onTelegramLinkAuth = async (user) => {
+      const params = new URLSearchParams();
+      Object.entries(user).forEach(([key, value]) => params.append(key, String(value)));
+      await handleTelegramLink(params.toString());
+    };
+
+    return () => {
+      if (container) {
+        container.innerHTML = "";
+      }
+      delete window.onTelegramLinkAuth;
+    };
+  }, [session?.token, session?.me.seller.telegram_id]);
+
+  async function handleTelegramLink(widgetData?: string) {
+    if (!session) {
+      return;
+    }
+    try {
+      setLinkingTelegram(true);
+      const initData = widgetData ? undefined : window.Telegram?.WebApp?.initData;
+      const result = await linkTelegram(session.token, widgetData
+        ? { widget_data: widgetData }
+        : { init_data: initData });
+      setSession((current) => current ? {
+        ...current,
+        me: {
+          ...current.me,
+          seller: result.seller,
+        },
+      } : current);
+      setError("");
+      setAccountMessage(text.telegramLinked);
+    } catch (err) {
+      setError((err as Error).message);
+      setAccountMessage("");
+    } finally {
+      setLinkingTelegram(false);
     }
   }
 
   const checkoutOrigin = useMemo(() => window.location.origin, []);
   const latestInvoice = session?.invoices[0] ?? null;
   const trialEnded = Boolean(session && !session.me.plan.is_pro && session.me.plan.trial_remaining <= 0);
-  const sellerHandle = session ? `@${session.me.seller.username || String(session.me.seller.telegram_id)}` : "";
+  const sellerHandle = session
+    ? session.me.seller.username
+      ? `@${session.me.seller.username}`
+      : session.me.seller.telegram_id
+        ? `#${session.me.seller.telegram_id}`
+        : session.me.seller.email
+    : "";
   const latestCheckoutUrl = freshLink || (latestInvoice ? `${checkoutOrigin}/checkout/${latestInvoice.public_id}` : "");
   const invoicePulse = useMemo(() => {
     if (!session) {
@@ -537,6 +684,7 @@ export function SellerConsolePage() {
         ) : null}
       </header>
 
+      {accountMessage ? <div className="auth-feedback auth-feedback--success">{accountMessage}</div> : null}
       {error ? <div className="alert">{error}</div> : null}
 
       {!session ? (
@@ -569,7 +717,7 @@ export function SellerConsolePage() {
                     <article className="console-stat-card">
                       <span>{text.seller}</span>
                       <strong><LiveValue value={sellerHandle} /></strong>
-                      <p>{text.sellerIdLabel}: {session.me.seller.telegram_id}</p>
+                      <p>{text.sellerIdLabel}: {session.me.seller.telegram_id ?? text.telegramMissing}</p>
                     </article>
                     <article className="console-stat-card">
                       <span>{text.plan}</span>
@@ -588,21 +736,85 @@ export function SellerConsolePage() {
                     </article>
                   </div>
 
-                  <form onSubmit={handleEmailSave} className="console-email-form">
-                    <label>
-                      {text.emailLabel}
-                      <input
-                        type="email"
-                        placeholder={text.emailPlaceholder}
-                        value={emailForm}
-                        onChange={(event) => setEmailForm(event.target.value)}
-                      />
-                    </label>
-                    <button type="submit" disabled={savingEmail}>
-                      {savingEmail ? text.savingEmail : text.saveEmail}
-                    </button>
-                    {session.me.seller.email ? <p className="muted">{text.emailLinked}</p> : null}
-                  </form>
+                  <div className="console-access-grid">
+                    <article className="console-access-card">
+                      <div>
+                        <h3>{text.emailAccessTitle}</h3>
+                        <p>{text.emailAccessCopy}</p>
+                      </div>
+
+                      {session.me.seller.has_password && session.me.seller.email_verified_at ? (
+                        <div className="console-access-status">
+                          <strong>{session.me.seller.email}</strong>
+                          <p>{text.emailAccessReady}</p>
+                        </div>
+                      ) : (
+                        <form onSubmit={handleEmailSave} className="console-email-form console-email-form--credentials">
+                          <label>
+                            {text.emailLabel}
+                            <input
+                              type="email"
+                              placeholder={text.emailPlaceholder}
+                              value={emailForm.email}
+                              onChange={(event) => setEmailForm((current) => ({ ...current, email: event.target.value }))}
+                            />
+                          </label>
+                          <div className="console-email-form__row">
+                            <label>
+                              {text.codeLabel}
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder={text.codePlaceholder}
+                                value={emailForm.code}
+                                onChange={(event) => setEmailForm((current) => ({ ...current, code: event.target.value }))}
+                              />
+                            </label>
+                            <button type="button" className="ghost-button" disabled={sendingEmailCode} onClick={() => void handleEmailCodeRequest()}>
+                              {sendingEmailCode ? text.sendingCode : text.sendCode}
+                            </button>
+                          </div>
+                          <label>
+                            {text.passwordLabel}
+                            <input
+                              type="password"
+                              placeholder={text.passwordPlaceholder}
+                              value={emailForm.password}
+                              onChange={(event) => setEmailForm((current) => ({ ...current, password: event.target.value }))}
+                            />
+                          </label>
+                          <button type="submit" disabled={savingEmail}>
+                            {savingEmail ? text.savingEmail : text.saveEmail}
+                          </button>
+                        </form>
+                      )}
+                    </article>
+
+                    <article className="console-access-card">
+                      <div>
+                        <h3>{text.telegramAccessTitle}</h3>
+                        <p>{text.telegramAccessCopy}</p>
+                      </div>
+
+                      {session.me.seller.telegram_id ? (
+                        <div className="console-access-status">
+                          <strong>{text.telegramLinked}</strong>
+                          <p>@{session.me.seller.username || session.me.seller.telegram_id}</p>
+                        </div>
+                      ) : (
+                        <div className="console-telegram-link">
+                          <p className="muted">{text.telegramLinkHint}</p>
+                          {window.Telegram?.WebApp?.initData ? (
+                            <button type="button" disabled={linkingTelegram} onClick={() => void handleTelegramLink()}>
+                              {linkingTelegram ? text.signingIn : text.telegramLinkAction}
+                            </button>
+                          ) : (
+                            <div id="console-telegram-link-container" className="auth-widget-wrapper" />
+                          )}
+                        </div>
+                      )}
+                    </article>
+                  </div>
                 </article>
 
                 <article className="console-surface console-section-card">

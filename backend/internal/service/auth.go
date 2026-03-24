@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/mail"
 	"net/url"
 	"sort"
 	"strconv"
@@ -18,6 +19,15 @@ import (
 	"reqst/backend/internal/store"
 
 	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
+)
+
+const (
+	EmailCodePurposeRegistration  = "registration"
+	EmailCodePurposeLinkEmail     = "link_email"
+	EmailCodePurposePasswordReset = "password_reset"
+	emailCodeTTL                  = 10 * time.Minute
+	minPasswordLength             = 8
 )
 
 type AuthService struct {
@@ -26,13 +36,35 @@ type AuthService struct {
 	telegramBotToken   string
 	allowInsecureDev   bool
 	telegramInitMaxAge time.Duration
+	emailSender        EmailSender
 }
 
 type TelegramAuthInput struct {
 	InitData   string `json:"init_data"`
-	WidgetData string `json:"widget_data"` // From Telegram Login Widget
+	WidgetData string `json:"widget_data"`
 	TelegramID int64  `json:"telegram_id"`
 	Username   string `json:"username"`
+}
+
+type EmailLoginInput struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type EmailCodeRequestInput struct {
+	Email string `json:"email"`
+}
+
+type EmailRegisterInput struct {
+	Email    string `json:"email"`
+	Code     string `json:"code"`
+	Password string `json:"password"`
+}
+
+type EmailPasswordResetInput struct {
+	Email       string `json:"email"`
+	Code        string `json:"code"`
+	NewPassword string `json:"new_password"`
 }
 
 type AuthResult struct {
@@ -42,36 +74,27 @@ type AuthResult struct {
 
 type Claims struct {
 	SellerID   int64  `json:"seller_id"`
-	TelegramID int64  `json:"telegram_id"`
+	TelegramID *int64 `json:"telegram_id,omitempty"`
 	Username   string `json:"username"`
 	jwt.RegisteredClaims
 }
 
-func NewAuthService(st *store.Store, jwtSecret string, telegramBotToken string, allowInsecureDev bool, telegramInitMaxAge time.Duration) *AuthService {
+func NewAuthService(st *store.Store, jwtSecret string, telegramBotToken string, allowInsecureDev bool, telegramInitMaxAge time.Duration, emailSender EmailSender) *AuthService {
+	if emailSender == nil {
+		emailSender = LogEmailSender{}
+	}
 	return &AuthService{
 		store:              st,
 		jwtSecret:          []byte(jwtSecret),
 		telegramBotToken:   telegramBotToken,
 		allowInsecureDev:   allowInsecureDev,
 		telegramInitMaxAge: telegramInitMaxAge,
+		emailSender:        emailSender,
 	}
 }
 
-func (s *AuthService) Authenticate(ctx context.Context, input TelegramAuthInput) (AuthResult, error) {
-	var telegramID int64
-	var username string
-	var err error
-
-	if strings.TrimSpace(input.InitData) != "" {
-		telegramID, username, err = s.validateInitData(input.InitData)
-	} else if strings.TrimSpace(input.WidgetData) != "" {
-		telegramID, username, err = s.validateWidgetData(input.WidgetData)
-	} else if s.allowInsecureDev && input.TelegramID > 0 {
-		telegramID, username = input.TelegramID, strings.TrimSpace(input.Username)
-	} else {
-		return AuthResult{}, errors.New("telegram authentication data is required")
-	}
-
+func (s *AuthService) AuthenticateTelegram(ctx context.Context, input TelegramAuthInput) (AuthResult, error) {
+	telegramID, username, err := s.resolveTelegramIdentity(input)
 	if err != nil {
 		return AuthResult{}, err
 	}
@@ -80,20 +103,190 @@ func (s *AuthService) Authenticate(ctx context.Context, input TelegramAuthInput)
 	if err != nil {
 		return AuthResult{}, fmt.Errorf("upsert seller: %w", err)
 	}
+	return s.issueAuthResult(seller)
+}
 
-	if seller.IsBlocked {
-		return AuthResult{}, errors.New("seller account is blocked")
-	}
-
-	token, err := s.issueToken(seller)
+func (s *AuthService) AuthenticateEmail(ctx context.Context, input EmailLoginInput) (AuthResult, error) {
+	email, err := normalizeEmail(input.Email)
 	if err != nil {
 		return AuthResult{}, err
 	}
 
-	return AuthResult{
-		Token:  token,
-		Seller: seller,
-	}, nil
+	seller, err := s.store.GetSellerByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return AuthResult{}, errors.New("account with this email was not found")
+		}
+		return AuthResult{}, fmt.Errorf("load seller by email: %w", err)
+	}
+	if !seller.HasPassword {
+		return AuthResult{}, errors.New("this account does not have email/password sign-in yet")
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(seller.PasswordHash), []byte(strings.TrimSpace(input.Password))); err != nil {
+		return AuthResult{}, errors.New("incorrect email or password")
+	}
+	return s.issueAuthResult(seller)
+}
+
+func (s *AuthService) RequestRegistrationCode(ctx context.Context, input EmailCodeRequestInput) error {
+	email, err := normalizeEmail(input.Email)
+	if err != nil {
+		return err
+	}
+
+	if seller, err := s.store.GetSellerByEmail(ctx, email); err == nil && seller.ID > 0 {
+		return errors.New("email is already linked to an existing account")
+	} else if err != nil && !errors.Is(err, store.ErrNotFound) {
+		return fmt.Errorf("check existing email: %w", err)
+	}
+
+	return s.createAndSendEmailCode(ctx, nil, email, EmailCodePurposeRegistration)
+}
+
+func (s *AuthService) RegisterWithEmail(ctx context.Context, input EmailRegisterInput) (AuthResult, error) {
+	email, err := normalizeEmail(input.Email)
+	if err != nil {
+		return AuthResult{}, err
+	}
+	if err := validatePassword(input.Password); err != nil {
+		return AuthResult{}, err
+	}
+
+	if seller, err := s.store.GetSellerByEmail(ctx, email); err == nil && seller.ID > 0 {
+		return AuthResult{}, errors.New("email is already linked to an existing account")
+	} else if err != nil && !errors.Is(err, store.ErrNotFound) {
+		return AuthResult{}, fmt.Errorf("check existing email: %w", err)
+	}
+
+	if _, err := s.consumeEmailCode(ctx, email, EmailCodePurposeRegistration, input.Code); err != nil {
+		return AuthResult{}, err
+	}
+
+	passwordHash, err := hashPassword(input.Password)
+	if err != nil {
+		return AuthResult{}, err
+	}
+
+	seller, err := s.store.CreateSellerWithEmail(ctx, email, passwordHash, time.Now())
+	if err != nil {
+		return AuthResult{}, fmt.Errorf("create seller with email: %w", err)
+	}
+	return s.issueAuthResult(seller)
+}
+
+func (s *AuthService) RequestEmailLinkCode(ctx context.Context, seller store.Seller, input EmailCodeRequestInput) error {
+	email, err := normalizeEmail(input.Email)
+	if err != nil {
+		return err
+	}
+
+	if existing, err := s.store.GetSellerByEmail(ctx, email); err == nil && existing.ID != seller.ID {
+		return errors.New("this email is already linked to another account")
+	} else if err != nil && !errors.Is(err, store.ErrNotFound) {
+		return fmt.Errorf("check linked email: %w", err)
+	}
+
+	return s.createAndSendEmailCode(ctx, &seller.ID, email, EmailCodePurposeLinkEmail)
+}
+
+func (s *AuthService) ConfirmEmailLink(ctx context.Context, seller store.Seller, input EmailRegisterInput) (store.Seller, error) {
+	email, err := normalizeEmail(input.Email)
+	if err != nil {
+		return store.Seller{}, err
+	}
+	if err := validatePassword(input.Password); err != nil {
+		return store.Seller{}, err
+	}
+
+	linkedSellerID, err := s.consumeEmailCode(ctx, email, EmailCodePurposeLinkEmail, input.Code)
+	if err != nil {
+		return store.Seller{}, err
+	}
+	if linkedSellerID == nil || *linkedSellerID != seller.ID {
+		return store.Seller{}, errors.New("the code does not belong to the current account")
+	}
+
+	passwordHash, err := hashPassword(input.Password)
+	if err != nil {
+		return store.Seller{}, err
+	}
+
+	updated, err := s.store.SetSellerEmailCredentials(ctx, seller.ID, email, passwordHash, time.Now())
+	if err != nil {
+		return store.Seller{}, fmt.Errorf("save email credentials: %w", err)
+	}
+	return updated, nil
+}
+
+func (s *AuthService) RequestPasswordResetCode(ctx context.Context, input EmailCodeRequestInput) error {
+	email, err := normalizeEmail(input.Email)
+	if err != nil {
+		return err
+	}
+
+	seller, err := s.store.GetSellerByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return nil
+		}
+		return fmt.Errorf("load seller by email: %w", err)
+	}
+
+	return s.createAndSendEmailCode(ctx, &seller.ID, email, EmailCodePurposePasswordReset)
+}
+
+func (s *AuthService) ResetPassword(ctx context.Context, input EmailPasswordResetInput) (AuthResult, error) {
+	email, err := normalizeEmail(input.Email)
+	if err != nil {
+		return AuthResult{}, err
+	}
+	if err := validatePassword(input.NewPassword); err != nil {
+		return AuthResult{}, err
+	}
+
+	sellerID, err := s.consumeEmailCode(ctx, email, EmailCodePurposePasswordReset, input.Code)
+	if err != nil {
+		return AuthResult{}, err
+	}
+	if sellerID == nil {
+		return AuthResult{}, errors.New("the reset code is not attached to a valid account")
+	}
+
+	passwordHash, err := hashPassword(input.NewPassword)
+	if err != nil {
+		return AuthResult{}, err
+	}
+
+	seller, err := s.store.ResetSellerPassword(ctx, *sellerID, passwordHash)
+	if err != nil {
+		return AuthResult{}, fmt.Errorf("reset seller password: %w", err)
+	}
+	return s.issueAuthResult(seller)
+}
+
+func (s *AuthService) LinkTelegram(ctx context.Context, seller store.Seller, input TelegramAuthInput) (store.Seller, error) {
+	telegramID, username, err := s.resolveTelegramIdentity(input)
+	if err != nil {
+		return store.Seller{}, err
+	}
+
+	existing, err := s.store.GetSellerByTelegramID(ctx, telegramID)
+	if err == nil && existing.ID != seller.ID {
+		return store.Seller{}, errors.New("this Telegram account is already linked to another reqst account")
+	}
+	if err != nil && !errors.Is(err, store.ErrNotFound) {
+		return store.Seller{}, fmt.Errorf("check existing Telegram link: %w", err)
+	}
+
+	updated, err := s.store.LinkTelegramToSeller(ctx, seller.ID, telegramID, username)
+	if err != nil {
+		return store.Seller{}, fmt.Errorf("link Telegram account: %w", err)
+	}
+	if updated.IsBlocked {
+		return store.Seller{}, errors.New("seller account is blocked")
+	}
+	return updated, nil
 }
 
 func (s *AuthService) ParseToken(tokenString string) (Claims, error) {
@@ -109,6 +302,22 @@ func (s *AuthService) ParseToken(tokenString string) (Claims, error) {
 		return Claims{}, errors.New("invalid token")
 	}
 	return *claims, nil
+}
+
+func (s *AuthService) issueAuthResult(seller store.Seller) (AuthResult, error) {
+	if seller.IsBlocked {
+		return AuthResult{}, errors.New("seller account is blocked")
+	}
+
+	token, err := s.issueToken(seller)
+	if err != nil {
+		return AuthResult{}, err
+	}
+
+	return AuthResult{
+		Token:  token,
+		Seller: seller,
+	}, nil
 }
 
 func (s *AuthService) issueToken(seller store.Seller) (string, error) {
@@ -131,6 +340,19 @@ func (s *AuthService) issueToken(seller store.Seller) (string, error) {
 		return "", fmt.Errorf("sign token: %w", err)
 	}
 	return signed, nil
+}
+
+func (s *AuthService) resolveTelegramIdentity(input TelegramAuthInput) (int64, string, error) {
+	if strings.TrimSpace(input.InitData) != "" {
+		return s.validateInitData(input.InitData)
+	}
+	if strings.TrimSpace(input.WidgetData) != "" {
+		return s.validateWidgetData(input.WidgetData)
+	}
+	if s.allowInsecureDev && input.TelegramID > 0 {
+		return input.TelegramID, strings.TrimSpace(input.Username), nil
+	}
+	return 0, "", errors.New("telegram authentication data is required")
 }
 
 func (s *AuthService) validateInitData(initData string) (int64, string, error) {
@@ -231,7 +453,70 @@ func (s *AuthService) validateWidgetData(queryString string) (int64, string, err
 		return 0, "", fmt.Errorf("invalid telegram id in widget: %w", err)
 	}
 
-	return id, values.Get("username"), nil
+	return id, strings.TrimSpace(values.Get("username")), nil
+}
+
+func (s *AuthService) createAndSendEmailCode(ctx context.Context, sellerID *int64, email string, purpose string) error {
+	code, err := randomDigits(6)
+	if err != nil {
+		return fmt.Errorf("generate auth code: %w", err)
+	}
+
+	expiresAt := time.Now().Add(emailCodeTTL)
+	if err := s.store.StoreEmailAuthCode(ctx, sellerID, email, purpose, hashEmailCode(email, purpose, code), expiresAt); err != nil {
+		return err
+	}
+	if err := s.emailSender.SendAuthCode(ctx, AuthCodeEmail{
+		Email:     email,
+		Code:      code,
+		Purpose:   purpose,
+		ExpiresAt: expiresAt,
+	}); err != nil {
+		return fmt.Errorf("send auth code email: %w", err)
+	}
+	return nil
+}
+
+func (s *AuthService) consumeEmailCode(ctx context.Context, email string, purpose string, code string) (*int64, error) {
+	if strings.TrimSpace(code) == "" {
+		return nil, errors.New("verification code is required")
+	}
+
+	sellerID, err := s.store.ConsumeEmailAuthCode(ctx, email, purpose, hashEmailCode(email, purpose, code))
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return nil, errors.New("verification code is invalid or expired")
+		}
+		return nil, fmt.Errorf("consume email code: %w", err)
+	}
+	return sellerID, nil
+}
+
+func normalizeEmail(value string) (string, error) {
+	email := strings.ToLower(strings.TrimSpace(value))
+	if email == "" {
+		return "", errors.New("email is required")
+	}
+	if _, err := mail.ParseAddress(email); err != nil {
+		return "", errors.New("invalid email address")
+	}
+	return email, nil
+}
+
+func validatePassword(value string) error {
+	password := strings.TrimSpace(value)
+	if len(password) < minPasswordLength {
+		return fmt.Errorf("password must be at least %d characters long", minPasswordLength)
+	}
+	return nil
+}
+
+func hashPassword(value string) (string, error) {
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(strings.TrimSpace(value)), bcrypt.DefaultCost)
+	if err != nil {
+		return "", fmt.Errorf("hash password: %w", err)
+	}
+	return string(passwordHash), nil
 }
 
 func telegramDataCheckString(values url.Values) string {
@@ -262,6 +547,29 @@ func telegramExpectedHash(botToken string, dataCheckString string) (string, erro
 		return "", fmt.Errorf("hash telegram data: %w", err)
 	}
 	return hex.EncodeToString(mac.Sum(nil)), nil
+}
+
+func hashEmailCode(email string, purpose string, code string) string {
+	sum := sha256.Sum256([]byte(strings.ToLower(strings.TrimSpace(email)) + "|" + purpose + "|" + strings.TrimSpace(code)))
+	return hex.EncodeToString(sum[:])
+}
+
+func randomDigits(length int) (string, error) {
+	if length <= 0 {
+		return "", errors.New("invalid random length")
+	}
+
+	buf := make([]byte, length)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+
+	var builder strings.Builder
+	builder.Grow(length)
+	for _, part := range buf {
+		builder.WriteByte('0' + (part % 10))
+	}
+	return builder.String(), nil
 }
 
 func randomID() string {

@@ -2,13 +2,16 @@ export type Network = "TON" | "TRON" | "SOLANA" | "EVM" | "BASE" | "ARBITRUM" | 
 
 export type Seller = {
   id: number;
-  telegram_id: number;
-  username: string | null;
-  email: string | null;
+  telegram_id: number | null;
+  username: string;
+  email: string;
   default_network: Network;
   subscription_ends_at: string | null;
   free_invoices_used: number;
   is_blocked: boolean;
+  email_verified_at: string | null;
+  telegram_linked_at: string | null;
+  has_password: boolean;
   created_at: string;
 };
 

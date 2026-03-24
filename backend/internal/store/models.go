@@ -101,13 +101,17 @@ const (
 
 type Seller struct {
 	ID                 int64      `json:"id"`
-	TelegramID         int64      `json:"telegram_id"`
+	TelegramID         *int64     `json:"telegram_id"`
 	Username           string     `json:"username"`
 	Email              string     `json:"email"`
 	DefaultNetwork     Network    `json:"default_network"`
 	SubscriptionEndsAt *time.Time `json:"subscription_ends_at"`
 	FreeInvoicesUsed   int        `json:"free_invoices_used"`
 	IsBlocked          bool       `json:"is_blocked"`
+	EmailVerifiedAt    *time.Time `json:"email_verified_at"`
+	TelegramLinkedAt   *time.Time `json:"telegram_linked_at"`
+	HasPassword        bool       `json:"has_password"`
+	PasswordHash       string     `json:"-"`
 	CreatedAt          time.Time  `json:"created_at"`
 }
 

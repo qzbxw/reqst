@@ -1,10 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { authenticate, getStoredToken, setStoredToken } from "../lib/api";
+import {
+  authenticateTelegram,
+  getStoredToken,
+  loginWithEmail,
+  registerWithEmail,
+  requestEmailRegistrationCode,
+  requestPasswordResetCode,
+  resetPassword,
+  setStoredToken,
+} from "../lib/api";
 import { useUI } from "../lib/ui";
 
 const BOT_URL = "https://t.me/reqstxyz_bot";
 const BOT_NAME = "reqstxyz_bot";
+
+type EmailMode = "login" | "register" | "reset";
 
 declare global {
   interface Window {
@@ -15,31 +26,72 @@ declare global {
         expand?: () => void;
       };
     };
+    onTelegramAuth?: (user: Record<string, string | number>) => Promise<void>;
   }
 }
 
 const COPY = {
   ru: {
     title: "Вход в reqst",
-    body: "Используйте ваш аккаунт Telegram для безопасного входа в панель управления продавца.",
-    telegramTitle: "Авторизация через Telegram",
-    telegramBody: "Если вы заходите с сайта, используйте кнопку ниже. Внутри Telegram-приложения вход произойдет автоматически.",
+    body: "Войдите через Telegram или через email и пароль. Оба способа могут жить в одном аккаунте, если вы потом свяжете их в профиле.",
+    telegramTitle: "Telegram",
+    telegramBody: "Если вы уже в Telegram Mini App, вход выполнится автоматически. С сайта можно зайти через виджет или открыть бота.",
     openBot: "Открыть бота",
     continueTelegram: "Войти через Telegram",
     signingIn: "Входим...",
     landing: "На главную",
     console: "В консоль",
+    emailTitle: "Email + пароль",
+    emailBody: "Создайте аккаунт по коду из письма, входите с паролем и восстанавливайте доступ без привязки только к Telegram.",
+    emailModes: {
+      login: "Вход",
+      register: "Регистрация",
+      reset: "Сброс",
+    },
+    email: "Email",
+    emailPlaceholder: "you@example.com",
+    password: "Пароль",
+    passwordPlaceholder: "Минимум 8 символов",
+    newPassword: "Новый пароль",
+    code: "Код из письма",
+    codePlaceholder: "123456",
+    sendCode: "Отправить код",
+    sendingCode: "Отправляем...",
+    loginAction: "Войти",
+    registerAction: "Создать аккаунт",
+    resetAction: "Сбросить пароль",
+    codeSent: "Код отправлен. Проверьте почту и затем завершите действие в этой форме.",
   },
   en: {
     title: "Sign in to reqst",
-    body: "Use your Telegram account to securely access your seller dashboard.",
-    telegramTitle: "Telegram Authentication",
-    telegramBody: "If you are browsing the website, use the button below. Inside the Telegram app, login is automatic.",
+    body: "Use Telegram or email/password. Both methods can belong to the same account once you link them in the profile.",
+    telegramTitle: "Telegram",
+    telegramBody: "Inside Telegram Mini App the session signs in automatically. On the website you can use the widget or open the bot directly.",
     openBot: "Open Bot",
     continueTelegram: "Login with Telegram",
     signingIn: "Signing in...",
     landing: "Back to Home",
     console: "Open Console",
+    emailTitle: "Email + password",
+    emailBody: "Create an account with a code from email, sign in with a password, and recover access even if Telegram is not your only entry point.",
+    emailModes: {
+      login: "Login",
+      register: "Sign up",
+      reset: "Reset",
+    },
+    email: "Email",
+    emailPlaceholder: "you@example.com",
+    password: "Password",
+    passwordPlaceholder: "At least 8 characters",
+    newPassword: "New password",
+    code: "Email code",
+    codePlaceholder: "123456",
+    sendCode: "Send code",
+    sendingCode: "Sending...",
+    loginAction: "Login",
+    registerAction: "Create account",
+    resetAction: "Reset password",
+    codeSent: "Code sent. Check your inbox and finish the flow in this form.",
   },
 } as const;
 
@@ -48,41 +100,53 @@ export function AuthPortalPage() {
   const { language } = useUI();
   const text = COPY[language];
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
+  const [emailMode, setEmailMode] = useState<EmailMode>("login");
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+    code: "",
+    newPassword: "",
+  });
   const hasSession = Boolean(getStoredToken());
   const [initData, setInitData] = useState(window.Telegram?.WebApp?.initData || "");
 
   useEffect(() => {
     if (!initData) {
-      const interval = setInterval(() => {
+      const interval = window.setInterval(() => {
         const data = window.Telegram?.WebApp?.initData;
         if (data) {
           setInitData(data);
-          clearInterval(interval);
+          window.clearInterval(interval);
         }
       }, 50);
-      setTimeout(() => clearInterval(interval), 2000); // Stop after 2s
-      return () => clearInterval(interval);
+      const timeout = window.setTimeout(() => window.clearInterval(interval), 2000);
+      return () => {
+        window.clearInterval(interval);
+        window.clearTimeout(timeout);
+      };
     }
+    return undefined;
   }, [initData]);
 
-  // 1. If we already have a session, go to console immediately
   useEffect(() => {
     if (hasSession) {
       navigate("/console", { replace: true });
     }
   }, [hasSession, navigate]);
 
-  // 2. If we are inside Telegram WebApp, try auto-login once
   useEffect(() => {
     if (initData && !hasSession) {
-      void performAuth(initData);
+      void performTelegramAuth(initData);
     }
   }, [initData, hasSession]);
 
   useEffect(() => {
-    // We only need the widget if we are NOT in the WebApp and NO session
-    if (initData || hasSession) return;
+    if (initData || hasSession) {
+      return undefined;
+    }
 
     const script = document.createElement("script");
     script.src = "https://telegram.org/js/telegram-widget.js?22";
@@ -98,36 +162,30 @@ export function AuthPortalPage() {
       container.appendChild(script);
     }
 
-    (window as any).onTelegramAuth = async (user: any) => {
+    window.onTelegramAuth = async (user) => {
       const params = new URLSearchParams();
-      Object.entries(user).forEach(([k, v]) => params.append(k, String(v)));
-      
-      try {
-        setLoading(true);
-        const result = await authenticate({ widget_data: params.toString() });
-        setStoredToken(result.token);
-        navigate("/console");
-      } catch (err) {
-        setError((err as Error).message);
-        setLoading(false);
-      }
+      Object.entries(user).forEach(([key, value]) => params.append(key, String(value)));
+      await performTelegramWidgetAuth(params.toString());
     };
 
     return () => {
-      if (container) container.innerHTML = "";
-      delete (window as any).onTelegramAuth;
+      if (container) {
+        container.innerHTML = "";
+      }
+      delete window.onTelegramAuth;
     };
-  }, [navigate, initData, hasSession]);
+  }, [hasSession, initData]);
 
-  async function performAuth(manualInitData?: string) {
+  async function performTelegramAuth(manualInitData?: string) {
     try {
       setLoading(true);
       setError("");
+      setMessage("");
       const sessionInitData = manualInitData || window.Telegram?.WebApp?.initData;
       if (!sessionInitData) {
         throw new Error("No Telegram session found");
       }
-      const result = await authenticate({ init_data: sessionInitData });
+      const result = await authenticateTelegram({ init_data: sessionInitData });
       setStoredToken(result.token);
       navigate("/console");
     } catch (err) {
@@ -135,6 +193,93 @@ export function AuthPortalPage() {
       setLoading(false);
     }
   }
+
+  async function performTelegramWidgetAuth(widgetData: string) {
+    try {
+      setLoading(true);
+      setError("");
+      setMessage("");
+      const result = await authenticateTelegram({ widget_data: widgetData });
+      setStoredToken(result.token);
+      navigate("/console");
+    } catch (err) {
+      setError((err as Error).message);
+      setLoading(false);
+    }
+  }
+
+  async function handleEmailSubmit(event: FormEvent) {
+    event.preventDefault();
+    try {
+      setLoading(true);
+      setError("");
+      setMessage("");
+
+      if (emailMode === "login") {
+        const result = await loginWithEmail({
+          email: form.email.trim(),
+          password: form.password,
+        });
+        setStoredToken(result.token);
+        navigate("/console");
+        return;
+      }
+
+      if (emailMode === "register") {
+        const result = await registerWithEmail({
+          email: form.email.trim(),
+          code: form.code.trim(),
+          password: form.password,
+        });
+        setStoredToken(result.token);
+        navigate("/console");
+        return;
+      }
+
+      const result = await resetPassword({
+        email: form.email.trim(),
+        code: form.code.trim(),
+        new_password: form.newPassword,
+      });
+      setStoredToken(result.token);
+      navigate("/console");
+    } catch (err) {
+      setError((err as Error).message);
+      setLoading(false);
+    }
+  }
+
+  async function handleSendCode() {
+    try {
+      setSendingCode(true);
+      setError("");
+      setMessage("");
+
+      if (emailMode === "register") {
+        await requestEmailRegistrationCode({ email: form.email.trim() });
+      } else {
+        await requestPasswordResetCode({ email: form.email.trim() });
+      }
+
+      setMessage(text.codeSent);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSendingCode(false);
+    }
+  }
+
+  function setMode(mode: EmailMode) {
+    setEmailMode(mode);
+    setError("");
+    setMessage("");
+  }
+
+  const emailActionLabel = emailMode === "login"
+    ? text.loginAction
+    : emailMode === "register"
+      ? text.registerAction
+      : text.resetAction;
 
   return (
     <main className="auth-portal">
@@ -158,25 +303,25 @@ export function AuthPortalPage() {
           </div>
         </header>
 
-        <section className="auth-portal__hero auth-portal__hero--centered">
+        <section className="auth-portal__hero">
           <div className="auth-portal__copy">
             <h1>{text.title}</h1>
             <p>{text.body}</p>
           </div>
 
-          <div className="auth-portal__main-action">
-            <article className="auth-card auth-card--hero">
+          <div className="auth-portal__grid">
+            <article className="auth-card auth-card--telegram">
               <div className="auth-card__content">
                 <h2>{text.telegramTitle}</h2>
                 <p>{text.telegramBody}</p>
               </div>
               <div className="auth-card__actions">
                 {initData ? (
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className="lend-primary lend-primary--large"
-                    disabled={loading} 
-                    onClick={() => void performAuth()}
+                    disabled={loading}
+                    onClick={() => void performTelegramAuth()}
                   >
                     {loading ? text.signingIn : text.continueTelegram}
                   </button>
@@ -187,9 +332,99 @@ export function AuthPortalPage() {
                   {text.openBot}
                 </a>
               </div>
-              {error ? <div className="alert">{error}</div> : null}
+            </article>
+
+            <article className="auth-card auth-card--email">
+              <div className="auth-card__content">
+                <h2>{text.emailTitle}</h2>
+                <p>{text.emailBody}</p>
+              </div>
+
+              <div className="auth-mode-switch" role="tablist" aria-label="email auth mode">
+                {(["login", "register", "reset"] as EmailMode[]).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    className={emailMode === mode ? "switch-pill active" : "switch-pill"}
+                    onClick={() => setMode(mode)}
+                  >
+                    {text.emailModes[mode]}
+                  </button>
+                ))}
+              </div>
+
+              <form className="auth-card__form auth-card__form--stacked" onSubmit={handleEmailSubmit}>
+                <label>
+                  {text.email}
+                  <input
+                    type="email"
+                    placeholder={text.emailPlaceholder}
+                    value={form.email}
+                    onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+                  />
+                </label>
+
+                {emailMode === "login" ? (
+                  <label>
+                    {text.password}
+                    <input
+                      type="password"
+                      placeholder={text.passwordPlaceholder}
+                      value={form.password}
+                      onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                    />
+                  </label>
+                ) : (
+                  <>
+                    <div className="auth-inline-action">
+                      <label>
+                        {text.code}
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder={text.codePlaceholder}
+                          value={form.code}
+                          onChange={(event) => setForm((current) => ({ ...current, code: event.target.value }))}
+                        />
+                      </label>
+                      <button type="button" className="ghost-button" disabled={sendingCode} onClick={() => void handleSendCode()}>
+                        {sendingCode ? text.sendingCode : text.sendCode}
+                      </button>
+                    </div>
+
+                    {emailMode === "register" ? (
+                      <label>
+                        {text.password}
+                        <input
+                          type="password"
+                          placeholder={text.passwordPlaceholder}
+                          value={form.password}
+                          onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                        />
+                      </label>
+                    ) : (
+                      <label>
+                        {text.newPassword}
+                        <input
+                          type="password"
+                          placeholder={text.passwordPlaceholder}
+                          value={form.newPassword}
+                          onChange={(event) => setForm((current) => ({ ...current, newPassword: event.target.value }))}
+                        />
+                      </label>
+                    )}
+                  </>
+                )}
+
+                <button type="submit" className="lend-primary lend-primary--large" disabled={loading}>
+                  {loading ? text.signingIn : emailActionLabel}
+                </button>
+              </form>
             </article>
           </div>
+
+          {message ? <div className="auth-feedback auth-feedback--success">{message}</div> : null}
+          {error ? <div className="alert">{error}</div> : null}
         </section>
       </div>
     </main>
