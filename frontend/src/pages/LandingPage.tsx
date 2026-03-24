@@ -413,17 +413,14 @@ function useReveal() {
 }
 
 export function LandingPage() {
-  const { language, setLanguage, theme } = useUI();
+  const { language, setLanguage } = useUI();
   const copy = COPY[language];
   const [openFaq, setOpenFaq] = useState(0);
   const reveal = useReveal();
 
   useEffect(() => {
     document.documentElement.dataset.theme = "dark";
-    return () => {
-      document.documentElement.dataset.theme = theme;
-    };
-  }, [theme]);
+  }, []);
 
   return (
     <main className="lend-page">

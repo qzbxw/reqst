@@ -402,15 +402,12 @@ const COPY = {
 } as const;
 
 export function LegalPage({ variant }: { variant: LegalVariant }) {
-  const { language, setLanguage, theme } = useUI();
+  const { language, setLanguage } = useUI();
   const copy = COPY[variant][language];
 
   useEffect(() => {
     document.documentElement.dataset.theme = "dark";
-    return () => {
-      document.documentElement.dataset.theme = theme;
-    };
-  }, [theme]);
+  }, []);
 
   return (
     <main className="legal-page">

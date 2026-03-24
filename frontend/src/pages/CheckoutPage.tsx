@@ -156,24 +156,13 @@ function formatDateTime(value: string, language: keyof typeof COPY) {
 
 export function CheckoutPage() {
   const { publicId = "" } = useParams();
-  const { language, theme, setLanguage, setTheme } = useUI();
+  const { language, setLanguage } = useUI();
   const text = COPY[language];
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [error, setError] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [now, setNow] = useState(Date.now());
   const [copiedField, setCopiedField] = useState<"amount" | "address" | "comment" | "">("");
-
-  useEffect(() => {
-    const previousTheme = document.documentElement.dataset.theme;
-    document.documentElement.dataset.theme = "light";
-    if (theme !== "light") {
-      setTheme("light");
-    }
-    return () => {
-      document.documentElement.dataset.theme = previousTheme || "light";
-    };
-  }, [setTheme, theme]);
 
   useEffect(() => {
     let active = true;
@@ -218,8 +207,8 @@ export function CheckoutPage() {
       margin: 1,
       errorCorrectionLevel: "M",
       color: {
-        dark: theme === "dark" ? "#f7f3ea" : "#14181b",
-        light: theme === "dark" ? "#050505" : "#fffaf4",
+        dark: "#f7f3ea",
+        light: "#050505",
       },
     })
       .then(setQrDataUrl)
@@ -230,8 +219,8 @@ export function CheckoutPage() {
             margin: 1,
             errorCorrectionLevel: "M",
             color: {
-              dark: theme === "dark" ? "#f7f3ea" : "#14181b",
-              light: theme === "dark" ? "#050505" : "#fffaf4",
+              dark: "#f7f3ea",
+              light: "#050505",
             },
           });
           setQrDataUrl(fallback);
@@ -239,7 +228,7 @@ export function CheckoutPage() {
           setQrDataUrl("");
         }
       });
-  }, [invoice, theme]);
+  }, [invoice]);
 
   useEffect(() => {
     if (!copiedField) {

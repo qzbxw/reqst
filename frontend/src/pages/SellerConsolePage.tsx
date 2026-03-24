@@ -306,7 +306,7 @@ function formatWalletNetworkLabel(network: Network) {
 }
 
 export function SellerConsolePage() {
-  const { language, theme, setLanguage, setTheme } = useUI();
+  const { language, setLanguage } = useUI();
   const text = COPY[language];
   const [session, setSession] = useState<SessionState | null>(null);
   const [error, setError] = useState("");
@@ -645,14 +645,6 @@ export function SellerConsolePage() {
                   {text.language.en}
                 </button>
               </div>
-              <button
-                type="button"
-                className="micro-action micro-action--icon"
-                onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-                aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
-              >
-                {theme === "light" ? "☀" : "☾"}
-              </button>
             </div>
             {session ? (
               <button type="button" className="ghost-button compact-button" onClick={handleLogout}>

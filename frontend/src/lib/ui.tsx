@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 
-type Theme = "light" | "dark";
+type Theme = "dark";
 type Language = "ru" | "en";
 
 type UIContextValue = {
@@ -18,13 +18,7 @@ const themeKey = "reqst_theme";
 const languageKey = "reqst_language";
 
 export function UIProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const stored = window.localStorage.getItem(themeKey);
-    if (stored === "light" || stored === "dark") {
-      return stored;
-    }
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  });
+  const [theme, setTheme] = useState<Theme>("dark");
 
   const [language, setLanguage] = useState<Language>(() => {
     const stored = window.localStorage.getItem(languageKey);
@@ -47,9 +41,9 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const value = useMemo<UIContextValue>(() => ({
     theme,
     language,
-    setTheme,
+    setTheme: () => setTheme("dark"),
     setLanguage,
-    toggleTheme: () => setTheme((current) => (current === "light" ? "dark" : "light")),
+    toggleTheme: () => setTheme("dark"),
     toggleLanguage: () => setLanguage((current) => (current === "ru" ? "en" : "ru")),
   }), [theme, language]);
 

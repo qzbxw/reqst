@@ -1,32 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap");
 
 :root {
-  color-scheme: light;
-  font-family: "Manrope", sans-serif;
-  --bg: #f5efe4;
-  --ink: #14181b;
-  --muted: #5b625b;
-  --paper: rgba(255, 250, 242, 0.9);
-  --paper-strong: rgba(255, 252, 246, 0.98);
-  --glass: rgba(255, 255, 255, 0.62);
-  --line: rgba(20, 24, 27, 0.11);
-  --line-strong: rgba(20, 24, 27, 0.2);
-  --accent: #d4642d;
-  --accent-strong: #a84316;
-  --accent-soft: rgba(212, 100, 45, 0.16);
-  --secondary: rgba(20, 24, 27, 0.05);
-  --ok: #1f8f55;
-  --success: #1f8f55;
-  --warn: #ad6d00;
-  --danger: #b24034;
-  --button-from: #1b2126;
-  --button-to: #0f1418;
-  --button-text: #fffaf2;
-  --shadow: 0 24px 80px rgba(30, 26, 16, 0.12);
-}
-
-:root[data-theme="dark"] {
   color-scheme: dark;
+  font-family: "Manrope", sans-serif;
   --bg: #000;
   --ink: #f7f3ea;
   --muted: #9da3ab;
