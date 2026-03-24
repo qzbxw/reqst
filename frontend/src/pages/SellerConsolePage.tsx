@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { CustomSelect } from "../components/CustomSelect";
 import {
   cancelInvoice,
@@ -17,6 +17,7 @@ import {
   markInvoicePaid,
   requestEmailLinkCode,
 } from "../lib/api";
+import { buildAuthHref } from "../lib/routing";
 import type { Invoice, MeResponse, Network, Wallet } from "../lib/types";
 import { useUI } from "../lib/ui";
 
@@ -321,6 +322,8 @@ function formatWalletNetworkLabel(network: Network) {
 }
 
 export function SellerConsolePage() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { language, setLanguage } = useUI();
   const text = COPY[language];
   const [session, setSession] = useState<SessionState | null>(null);
@@ -400,7 +403,7 @@ export function SellerConsolePage() {
     } catch (err) {
       clearStoredToken();
       setSession(null);
-      setError((err as Error).message);
+      navigate(buildAuthHref(`${location.pathname}${location.search}${location.hash}`), { replace: true });
     } finally {
       if (!options?.silent) {
         setLoading(false);
@@ -501,8 +504,9 @@ export function SellerConsolePage() {
     setSession(null);
     setEmailForm({ email: "", code: "", password: "" });
     setFreshLink("");
-    setActivePanel("overview");
-    setAccountMessage("");
+      setActivePanel("overview");
+      setAccountMessage("");
+      navigate("/auth", { replace: true });
   }
 
   async function handleEmailCodeRequest() {

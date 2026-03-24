@@ -25,25 +25,16 @@ const COPY = {
       badges: ["Direct-to-Wallet", "Telegram Native", "0% Transaction Fee", "API Ready", "B2B Scale"],
     },
     heroPanel: {
-      eyebrow: "snapshot",
-      title: "Интерфейс, который продает за вас",
-      items: [
-        {
-          label: "checkout",
-          title: "Умный чекаут",
-          body: "Динамические QR-коды, выбор сети и живой статус оплаты в одном окне.",
-        },
-        {
-          label: "tracking",
-          title: "Авто-трекинг",
-          body: "Система сама находит транзакции и уведомляет вас об успешной оплате.",
-        },
-        {
-          label: "ops",
-          title: "Гибкая панель",
-          body: "Управляйте инвойсами через веб-консоль или мощного Telegram-бота.",
-        },
-      ],
+      eyebrow: "live demo",
+      title: "Откройте mock checkout",
+      body: "Покажите клиентский флоу вживую: таймер, QR, реквизиты и аккуратный статус оплаты на отдельной странице.",
+      amount: "149 USDT",
+      invoice: "REQST-DEMO-149",
+      status: "Ожидает оплату",
+      primary: "Посмотреть checkout",
+      secondary: "Войти в консоль",
+      helper: "Идеально для презентации продукта, onboarding и первого wow-эффекта.",
+      chips: ["TON", "TRON", "Base", "Live status"],
     },
     overview: {
       kicker: "OVERVIEW",
@@ -225,25 +216,16 @@ const COPY = {
       badges: ["Direct-to-Wallet", "Telegram Native", "0% Transaction Fee", "API Ready", "B2B Scale"],
     },
     heroPanel: {
-      eyebrow: "snapshot",
-      title: "An interface that sells for you",
-      items: [
-        {
-          label: "checkout",
-          title: "Smart Checkout",
-          body: "Dynamic QR codes, network selection, and live status in one clean UI.",
-        },
-        {
-          label: "tracking",
-          title: "Auto-Tracking",
-          body: "The system monitors the blockchain and notifies you of successful payments.",
-        },
-        {
-          label: "ops",
-          title: "Flexible Ops",
-          body: "Manage invoices via our web console or a powerful Telegram bot.",
-        },
-      ],
+      eyebrow: "live demo",
+      title: "Open the mock checkout",
+      body: "Show the buyer flow live: countdown, QR, payment details, and a polished payment status on a dedicated page.",
+      amount: "149 USDT",
+      invoice: "REQST-DEMO-149",
+      status: "Awaiting payment",
+      primary: "View checkout",
+      secondary: "Open console",
+      helper: "Perfect for demos, onboarding, and a strong first product impression.",
+      chips: ["TON", "TRON", "Base", "Live status"],
     },
     overview: {
       kicker: "OVERVIEW",
@@ -489,17 +471,51 @@ export function LandingPage() {
               <div className="lend-panel-heading">
                 <span className="lend-kicker">{copy.heroPanel.eyebrow}</span>
                 <h2>{copy.heroPanel.title}</h2>
+                <p>{copy.heroPanel.body}</p>
               </div>
 
-              <div className="lend-panel-grid">
-                {copy.heroPanel.items.map((item) => (
-                  <article key={item.title} className="lend-panel-card">
-                    <span>{item.label}</span>
-                    <strong>{item.title}</strong>
-                    <p>{item.body}</p>
-                  </article>
-                ))}
+              <div className="lend-demo-card">
+                <div className="lend-demo-browser">
+                  <span />
+                  <span />
+                  <span />
+                  <b>reqst.app/checkout/demo</b>
+                </div>
+
+                <div className="lend-demo-stage">
+                  <div className="lend-demo-receipt">
+                    <div className="lend-demo-receipt-top">
+                      <span className="lend-demo-badge">Reqst Checkout</span>
+                      <span className="lend-demo-status">{copy.heroPanel.status}</span>
+                    </div>
+                    <strong>{copy.heroPanel.amount}</strong>
+                    <p>{copy.heroPanel.invoice}</p>
+
+                    <div className="lend-demo-chip-row">
+                      {copy.heroPanel.chips.map((chip) => (
+                        <span key={chip} className="lend-demo-chip">
+                          {chip}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="lend-demo-qr" aria-hidden="true">
+                    <div className="lend-demo-qr-grid" />
+                  </div>
+                </div>
               </div>
+
+              <div className="lend-panel-actions">
+                <Link className="lend-primary" to="/checkout/demo">
+                  {copy.heroPanel.primary}
+                </Link>
+                <Link className="lend-secondary" to="/auth">
+                  {copy.heroPanel.secondary}
+                </Link>
+              </div>
+
+              <p className="lend-panel-helper">{copy.heroPanel.helper}</p>
             </div>
           </aside>
         </section>

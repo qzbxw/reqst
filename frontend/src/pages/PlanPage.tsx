@@ -254,34 +254,17 @@ export function PlanPage({ variant }: { variant: Variant }) {
         </div>
       </header>
 
-      <div className="checkout-flow" style={{ marginTop: "1.5rem" }}>
+      <div className="checkout-flow page-section-offset">
         <section className="checkout-story">
-          <article className="checkout-card checkout-card--lux">
-            <div className="receipt-hero">
-              <div className="receipt-copy">
-                <div className="receipt-brandline">
-                  <span>Reqst Protocol</span>
-                </div>
-                <div className="receipt-heading">
-                  <span className={`checkout-badge checkout-badge--${variant}`}>{product.badge}</span>
-                  <span className="status-pill receipt-status">Active Layer</span>
-                </div>
+          <article className="checkout-card checkout-card--lux plan-page__hero-card">
+            <div className="receipt-hero receipt-hero--plan">
+              <div className="receipt-copy receipt-copy--plan">
                 <h1>{product.title}</h1>
                 <p className="hero-copy">{product.body}</p>
-                <div className="receipt-docmeta">
-                  <div>
-                    <span>Type</span>
-                    <strong>SaaS Integration</strong>
-                  </div>
-                  <div>
-                    <span>SLA</span>
-                    <strong>99.9% Delivery</strong>
-                  </div>
-                </div>
               </div>
             </div>
 
-            <div className="plan-page__stats" style={{ marginTop: "2rem", gridTemplateColumns: "repeat(3, 1fr)" }}>
+            <div className="plan-page__stats plan-page__stats--plan">
               {product.stats.map((item) => (
                 <div key={item.label} className="metric-card">
                   <span>{item.label}</span>
@@ -290,11 +273,11 @@ export function PlanPage({ variant }: { variant: Variant }) {
               ))}
             </div>
 
-            <div className="plan-page__actions" style={{ marginTop: "2rem" }}>
-              <Link className="lend-primary lend-primary--large" style={{ width: "100%", textAlign: "center" }} to={`/console?plan=${variant}`}>
+            <div className="plan-page__actions plan-page__actions--stacked">
+              <Link className="lend-primary lend-primary--large plan-page__action-link" to={`/console?plan=${variant}`}>
                 {text.billing}
               </Link>
-              <Link className="lend-secondary" style={{ width: "100%", textAlign: "center", marginTop: "0.5rem" }} to="/console">
+              <Link className="lend-secondary plan-page__action-link" to="/console">
                 {text.console}
               </Link>
             </div>
@@ -309,7 +292,7 @@ export function PlanPage({ variant }: { variant: Variant }) {
                 <div key={section.title} className="payment-field">
                   <div>
                     <label>{section.title}</label>
-                    <p style={{ margin: "0.3rem 0 0", color: "var(--muted)", fontSize: "0.9rem" }}>{section.body}</p>
+                    <p className="page-muted-copy">{section.body}</p>
                   </div>
                 </div>
               ))}
@@ -320,35 +303,35 @@ export function PlanPage({ variant }: { variant: Variant }) {
         <aside className="payment-rail">
           <div className="amount-totem amount-totem--receipt amount-totem--rail">
             <span>{language === "ru" ? "Стоимость" : "Price"}</span>
-            <strong style={{ fontSize: "2.4rem" }}>{product.price.split(" / ")[0]}</strong>
+            <strong className="plan-page__price-strong">{product.price.split(" / ")[0]}</strong>
             <div className="network-badge">
               <b>{product.price.split(" / ")[1]}</b>
               <small>{language === "ru" ? "период доступа" : "access period"}</small>
             </div>
           </div>
 
-          <article className="checkout-card checkout-card--lux" style={{ padding: "1.25rem" }}>
-            <span className="receipt-brandline" style={{ marginBottom: "1rem" }}>{text.flowTitle}</span>
+          <article className="checkout-card checkout-card--lux plan-page__side-card">
+            <span className="receipt-brandline plan-page__section-label">{text.flowTitle}</span>
             <div className="plan-page__stack">
               {product.flow.map((item, index) => (
-                <div key={item} className="detail-row" style={{ marginBottom: "0.75rem", background: "transparent" }}>
-                  <div style={{ display: "flex", gap: "1rem" }}>
-                    <strong style={{ color: "var(--accent)" }}>{String(index + 1).padStart(2, "0")}</strong>
-                    <p style={{ margin: 0, fontSize: "0.9rem" }}>{item}</p>
+                <div key={item} className="detail-row plan-page__detail-row">
+                  <div className="plan-page__timeline-item">
+                    <strong className="plan-page__timeline-index">{String(index + 1).padStart(2, "0")}</strong>
+                    <p className="page-copy-reset">{item}</p>
                   </div>
                 </div>
               ))}
             </div>
           </article>
 
-          <article className="checkout-card checkout-card--lux" style={{ padding: "1.25rem" }}>
-            <span className="receipt-brandline" style={{ marginBottom: "1rem" }}>{text.fitTitle}</span>
+          <article className="checkout-card checkout-card--lux plan-page__side-card">
+            <span className="receipt-brandline plan-page__section-label">{text.fitTitle}</span>
             <div className="plan-page__fit-list">
               {product.fit.map((item) => (
-                <div key={item} className="detail-row" style={{ marginBottom: "0.5rem", background: "transparent", border: "0", padding: "0" }}>
-                  <div style={{ display: "flex", gap: "0.75rem", alignItems: "start" }}>
-                    <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "var(--accent)", marginTop: "0.6rem", flexShrink: 0 }} />
-                    <p style={{ margin: 0, fontSize: "0.9rem" }}>{item}</p>
+                <div key={item} className="detail-row plan-page__fit-row">
+                  <div className="plan-page__fit-item">
+                    <span />
+                    <p className="page-copy-reset">{item}</p>
                   </div>
                 </div>
               ))}
@@ -357,22 +340,6 @@ export function PlanPage({ variant }: { variant: Variant }) {
         </aside>
       </div>
 
-      <section className="plan-page__section" style={{ marginTop: "3rem" }}>
-        <div className="plan-page__section-heading">
-          <span className="eyebrow">{text.faqTitle}</span>
-          <h2>{variant === "enterprise" ? "Protocol FAQ" : "Integration FAQ"}</h2>
-        </div>
-        <div className="plan-page__faq-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)", gap: "1rem" }}>
-          {product.faq.map((item) => (
-            <article key={item.question} className="console-link-card">
-              <span>Question</span>
-              <strong style={{ fontSize: "1.1rem", marginBottom: "0.5rem", display: "block" }}>{item.question}</strong>
-              <p>{item.answer}</p>
-            </article>
-          ))}
-        </div>
-      </section>
     </main>
   );
 }
-

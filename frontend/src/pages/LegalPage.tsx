@@ -433,8 +433,8 @@ export function LegalPage({ variant }: { variant: LegalVariant }) {
             <Link className="lend-nav-link" to="/lend">
               /lend
             </Link>
-            <Link className="lend-primary" to="/">
-              Console
+            <Link className="lend-primary" to="/auth">
+              Auth
             </Link>
           </div>
         </header>

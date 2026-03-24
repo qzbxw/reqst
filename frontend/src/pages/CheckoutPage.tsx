@@ -6,6 +6,7 @@ import type { Invoice } from "../lib/types";
 import { useUI } from "../lib/ui";
 
 const BOT_URL = "https://t.me/reqstxyz_bot";
+const DEMO_PUBLIC_ID = "demo";
 
 const COPY = {
   ru: {
@@ -154,10 +155,33 @@ function formatDateTime(value: string, language: keyof typeof COPY) {
   return new Date(value).toLocaleString(language === "ru" ? "ru-RU" : "en-US");
 }
 
+function createDemoInvoice(): Invoice {
+  const expiresAt = new Date(Date.now() + 17 * 60 * 1000).toISOString();
+  return {
+    id: 0,
+    public_id: "REQST-DEMO-149",
+    kind: "merchant",
+    plan_code: "pro",
+    checkout_badge: "Demo Checkout",
+    title: "Reqst Product Demo",
+    base_amount_usd: "149.00",
+    payable_amount: "149 USDT",
+    payable_network: "TON",
+    destination_address: "UQDemo4A7m9f6jK2x8mP3sL0qW8rT2nV5yH1cD6pQ9zX4aB7",
+    payment_comment: "REQST-DEMO-149",
+    status: "awaiting_payment",
+    expires_at: expiresAt,
+    tx_hash: null,
+    checkout_url: "/checkout/demo",
+    payment_uri: "ton://transfer/UQDemo4A7m9f6jK2x8mP3sL0qW8rT2nV5yH1cD6pQ9zX4aB7?amount=149000000000&text=REQST-DEMO-149",
+  };
+}
+
 export function CheckoutPage() {
   const { publicId = "" } = useParams();
   const { language, setLanguage } = useUI();
   const text = COPY[language];
+  const demoInvoice = useMemo(() => createDemoInvoice(), []);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [error, setError] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
@@ -168,6 +192,12 @@ export function CheckoutPage() {
     let active = true;
 
     async function load() {
+      if (publicId === DEMO_PUBLIC_ID) {
+        setInvoice(demoInvoice);
+        setError("");
+        return;
+      }
+
       try {
         const result = await fetchPublicInvoice(publicId);
         if (!active) {
@@ -192,7 +222,7 @@ export function CheckoutPage() {
       window.clearInterval(poll);
       window.clearInterval(clock);
     };
-  }, [publicId]);
+  }, [demoInvoice, publicId]);
 
   useEffect(() => {
     if (!invoice) {

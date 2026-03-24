@@ -320,20 +320,20 @@ export function DeveloperPortalPage() {
         </div>
       </header>
 
-      <section className="developer-portal__hero" style={{ marginTop: "1.5rem" }}>
+      <section className="developer-portal__hero page-section-offset">
         <div className="developer-portal__hero-copy">
           <span className="eyebrow">Integration Command Center</span>
           <h1>{text.title}</h1>
           <p className="hero-copy">{text.body}</p>
 
-          <div className="developer-portal__rail" style={{ marginTop: "2rem" }}>
+          <div className="developer-portal__rail developer-portal__rail--spaced">
             <span className="receipt-brandline">{text.railTitle}</span>
-            <div className="developer-portal__rail-list" style={{ marginTop: "1rem" }}>
+            <div className="developer-portal__rail-list developer-portal__rail-list--spaced">
               {text.rails.map((item) => (
-                <div key={item} className="detail-row" style={{ marginBottom: "0.5rem", background: "transparent" }}>
-                  <div style={{ display: "flex", gap: "0.75rem", alignItems: "start" }}>
-                    <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "var(--accent)", marginTop: "0.6rem", flexShrink: 0 }} />
-                    <p style={{ margin: 0, fontSize: "0.9rem" }}>{item}</p>
+                <div key={item} className="detail-row developer-portal__rail-row">
+                  <div className="developer-portal__rail-item-copy">
+                    <span />
+                    <p className="page-copy-reset">{item}</p>
                   </div>
                 </div>
               ))}
@@ -352,26 +352,26 @@ export function DeveloperPortalPage() {
         </div>
       </section>
 
-      {error ? <div className="alert" style={{ marginTop: "1.5rem" }}>{error}</div> : null}
-      {loading ? <p className="muted" style={{ marginTop: "1.5rem" }}>{language === "ru" ? "Загрузка..." : "Loading..."}</p> : null}
+      {error ? <div className="alert page-section-offset--compact">{error}</div> : null}
+      {loading ? <p className="muted page-section-offset--compact">{language === "ru" ? "Загрузка..." : "Loading..."}</p> : null}
 
       {!token || !me ? (
-        <div className="developer-portal__locked" style={{ marginTop: "1.5rem" }}>
+        <div className="developer-portal__locked page-section-offset">
           <section className="checkout-card checkout-card--lux">
             <div className="completion-paper-topline">
               <span className="receipt-brandline">Access Required</span>
               <span className="completion-ticket-no">Locked</span>
             </div>
-            <div style={{ padding: "1.5rem 0" }}>
+            <div className="developer-portal__locked-copy">
               <h2>{text.authTitle}</h2>
               <p className="hero-copy">{text.authBody}</p>
-              <Link className="lend-primary lend-primary--large" style={{ marginTop: "1.5rem" }} to="/auth">
+              <Link className="lend-primary lend-primary--large developer-portal__cta" to="/auth">
                 {text.authAction}
               </Link>
             </div>
           </section>
 
-          <section className="payment-sheet payment-sheet--receipt" style={{ marginTop: "1.5rem" }}>
+          <section className="payment-sheet payment-sheet--receipt developer-portal__locked-sheet">
             <div className="payment-sheet-header">
               <span className="payment-sheet-kicker">{text.lockedTitle}</span>
             </div>
@@ -379,21 +379,21 @@ export function DeveloperPortalPage() {
               <div className="payment-field">
                 <div>
                   <label>Portal Structure</label>
-                  <p style={{ margin: "0.3rem 0 0", color: "var(--muted)", fontSize: "0.9rem" }}>{text.lockedBody}</p>
+                  <p className="page-muted-copy">{text.lockedBody}</p>
                 </div>
               </div>
             </div>
           </section>
         </div>
       ) : (
-        <div className="console-grid" style={{ marginTop: "1.5rem" }}>
+        <div className="console-grid page-section-offset">
           <section className="console-stack">
-            <article className="checkout-card checkout-card--lux" style={{ padding: "1.5rem" }}>
+            <article className="checkout-card checkout-card--lux developer-portal__card">
               <div className="completion-paper-topline">
                 <span className="receipt-brandline">{text.summaryTitle}</span>
                 <span className="completion-ticket-no">{me.plan.code.toUpperCase()}</span>
               </div>
-              <div className="console-summary-strip" style={{ marginTop: "1.5rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+              <div className="console-summary-strip console-summary-strip--two developer-portal__summary-strip">
                 <div className="metric-card">
                   <span>{text.currentPlan}</span>
                   <strong>{me.plan.code.toUpperCase()}</strong>
@@ -408,14 +408,14 @@ export function DeveloperPortalPage() {
             </article>
 
             {!me.plan.has_api ? (
-              <article className="checkout-card checkout-card--lux" style={{ padding: "1.5rem" }}>
+              <article className="checkout-card checkout-card--lux developer-portal__card">
                 <div className="completion-paper-topline">
                   <span className="receipt-brandline">Billing</span>
                   <span className="completion-ticket-no">Upgrade</span>
                 </div>
-                <h2 style={{ marginTop: "1.5rem" }}>{text.upgradeTitle}</h2>
+                <h2 className="developer-portal__section-title">{text.upgradeTitle}</h2>
                 <p className="hero-copy">{text.upgradeBody}</p>
-                <div className="form-grid" style={{ marginTop: "1.5rem" }}>
+                <div className="form-grid page-section-offset--compact">
                   <label>
                     {text.plan}
                     <CustomSelect
@@ -435,14 +435,14 @@ export function DeveloperPortalPage() {
                     />
                   </label>
                 </div>
-                <button type="button" className="lend-primary lend-primary--large" style={{ width: "100%", marginTop: "1.5rem" }} onClick={() => void handleCreateCheckout()}>
+                <button type="button" className="lend-primary lend-primary--large developer-portal__cta page-section-offset--compact" onClick={() => void handleCreateCheckout()}>
                   {text.createCheckout}
                 </button>
                 {checkoutUrl ? (
-                  <div className="payload-callout" style={{ marginTop: "1rem" }}>
+                  <div className="payload-callout page-section-offset--tight">
                     <span>{text.latestCheckout}</span>
-                    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                      <code style={{ flex: 1, fontSize: "0.85rem" }}>{checkoutUrl}</code>
+                    <div className="developer-portal__inline-copy">
+                      <code className="developer-portal__inline-code developer-portal__inline-code--small">{checkoutUrl}</code>
                       <button type="button" className="ghost-button compact-button" onClick={() => navigator.clipboard.writeText(checkoutUrl)}>
                         {text.copy}
                       </button>
@@ -452,12 +452,12 @@ export function DeveloperPortalPage() {
               </article>
             ) : (
               <>
-                <article className="checkout-card checkout-card--lux" style={{ padding: "1.5rem" }}>
+                <article className="checkout-card checkout-card--lux developer-portal__card">
                   <div className="completion-paper-topline">
                     <span className="receipt-brandline">Usage Quotas</span>
                     <span className="completion-ticket-no">Live</span>
                   </div>
-                  <div className="console-pulse-grid" style={{ marginTop: "1.5rem", gridTemplateColumns: "repeat(2, 1fr)" }}>
+                  <div className="console-pulse-grid console-pulse-grid--two developer-portal__pulse-grid">
                     <div className="console-pulse-card">
                       <span>{text.monthly}</span>
                       <strong>{usage?.usage.monthly_requests ?? 0} / {usage?.usage.monthly_limit ?? me.plan.monthly_cap}</strong>
@@ -477,12 +477,12 @@ export function DeveloperPortalPage() {
                   </div>
                 </article>
 
-                <article className="checkout-card checkout-card--lux" style={{ padding: "1.5rem" }}>
+                <article className="checkout-card checkout-card--lux developer-portal__card">
                   <div className="completion-paper-topline">
                     <span className="receipt-brandline">Security</span>
                     <span className="completion-ticket-no">{text.keysTitle}</span>
                   </div>
-                  <form onSubmit={handleCreateKey} className="form-grid" style={{ marginTop: "1.5rem" }}>
+                  <form onSubmit={handleCreateKey} className="form-grid page-section-offset--compact">
                     <label>
                       {text.keyLabel}
                       <input value={keyLabel} placeholder={text.keyPlaceholder} onChange={(event) => setKeyLabel(event.target.value)} />
@@ -490,17 +490,17 @@ export function DeveloperPortalPage() {
                     <button type="submit" className="lend-primary">{text.createKey}</button>
                   </form>
                   {latestSecret ? (
-                    <div className="payload-callout" style={{ marginTop: "1rem" }}>
+                    <div className="payload-callout page-section-offset--tight">
                       <span>{text.latestSecret}</span>
-                      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                        <code style={{ flex: 1 }}>{latestSecret}</code>
+                      <div className="developer-portal__inline-copy">
+                        <code className="developer-portal__inline-code">{latestSecret}</code>
                         <button type="button" className="ghost-button compact-button" onClick={() => navigator.clipboard.writeText(latestSecret)}>
                           {text.copy}
                         </button>
                       </div>
                     </div>
                   ) : null}
-                  <div className="stack-list" style={{ marginTop: "1.5rem" }}>
+                  <div className="stack-list page-section-offset--compact">
                     {apiKeys.map((key) => (
                       <div key={key.id} className="payment-field">
                         <div>
@@ -586,4 +586,3 @@ export function DeveloperPortalPage() {
     </main>
   );
 }
-
