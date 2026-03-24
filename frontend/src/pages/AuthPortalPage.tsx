@@ -26,8 +26,6 @@ declare global {
 
 const COPY = {
   ru: {
-    title: "Вход в Reqst",
-    body: "Для авторизации используется Telegram. Введите ваш @username, получите код в боте и подтвердите вход.",
     browserTitle: "Вход по коду",
     browserBody: "Безопасный вход через Telegram-бота для браузеров и настольных устройств.",
     username: "Ваш @username",
@@ -40,19 +38,13 @@ const COPY = {
     signingIn: "Авторизация...",
     codeSent: "Код успешно отправлен в Telegram.",
     browserHint: "Пожалуйста, сначала запустите нашего бота, чтобы он мог отправить вам код.",
-    browserSteps: "Введите ваш @username, запросите код в боте и вставьте его в поле ниже.",
-    botStart: "Запустите",
-    botStartSuffix: "и нажмите Start.",
     telegramTitle: "Telegram Mini App",
     telegramBody: "Если вы открыли это окно внутри Telegram, авторизация произойдет автоматически.",
     openBot: "Открыть бота",
     continueTelegram: "Продолжить в Telegram",
     landing: "На главную",
-    redirectHint: "Вы будете перенаправлены в нужный раздел после авторизации.",
   },
   en: {
-    title: "Sign in to Reqst",
-    body: "Reqst uses Telegram for secure authentication. Enter your @username, get a code from the bot, and confirm sign-in.",
     browserTitle: "Sign in via code",
     browserBody: "Secure Telegram-based authentication for browsers and desktop.",
     username: "Your @username",
@@ -65,15 +57,11 @@ const COPY = {
     signingIn: "Signing in...",
     codeSent: "Code has been sent to your Telegram.",
     browserHint: "Please start our bot first so we can send you the authentication code.",
-    browserSteps: "Enter your @username, request the code in the bot, and paste it here.",
-    botStart: "Open",
-    botStartSuffix: "and press Start first.",
     telegramTitle: "Telegram Mini App",
     telegramBody: "If you are using the Telegram Mini App, you will be signed in automatically.",
     openBot: "Open Bot",
     continueTelegram: "Login with Telegram",
     landing: "Home",
-    redirectHint: "You will be redirected after sign-in.",
   },
 } as const;
 
@@ -191,16 +179,6 @@ export function AuthPortalPage() {
       </header>
 
       <section className="auth-portal__compact">
-        <div className="auth-portal__copy auth-portal__copy--compact">
-          <h1>{text.title}</h1>
-          <p>{text.body}</p>
-          <p className="auth-portal__hint">{text.browserSteps}</p>
-          <p className="auth-portal__hint">
-            {text.botStart} <a href={BOT_URL} target="_blank" rel="noreferrer">@reqstxyz_bot</a> {text.botStartSuffix}
-          </p>
-          {nextPath !== "/console" ? <p className="auth-portal__hint">{text.redirectHint}</p> : null}
-        </div>
-
         <article className="checkout-card checkout-card--lux auth-card auth-card--email auth-card--primary">
           <div className="completion-paper-topline">
             <span className="receipt-brandline">Primary</span>

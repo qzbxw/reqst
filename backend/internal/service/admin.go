@@ -1,6 +1,7 @@
 package service
 
 import (
+	"crypto/subtle"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
@@ -11,12 +12,11 @@ import (
 	"reqst/backend/internal/metrics"
 
 	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type AdminService struct {
 	username   string
-	passHash   string
+	password   string
 	jwtSecret  []byte
 	sessionTTL time.Duration
 }
@@ -27,17 +27,17 @@ type AdminClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewAdminService(username string, passwordHash string, jwtSecret string, sessionTTL time.Duration) *AdminService {
+func NewAdminService(username string, password string, jwtSecret string, sessionTTL time.Duration) *AdminService {
 	return &AdminService{
 		username:   strings.TrimSpace(username),
-		passHash:   strings.TrimSpace(passwordHash),
+		password:   password,
 		jwtSecret:  []byte(strings.TrimSpace(jwtSecret)),
 		sessionTTL: sessionTTL,
 	}
 }
 
 func (s *AdminService) Enabled() bool {
-	return s.username != "" && s.passHash != "" && len(s.jwtSecret) > 0
+	return s.username != "" && s.password != "" && len(s.jwtSecret) > 0
 }
 
 func (s *AdminService) Authenticate(username string, password string) (string, error) {
@@ -49,7 +49,7 @@ func (s *AdminService) Authenticate(username string, password string) (string, e
 		metrics.IncAuthAttempt("admin_login", "failure", "username")
 		return "", errors.New("invalid admin credentials")
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(s.passHash), []byte(password)); err != nil {
+	if subtle.ConstantTimeCompare([]byte(s.password), []byte(password)) != 1 {
 		metrics.IncAuthAttempt("admin_login", "failure", "password")
 		return "", errors.New("invalid admin credentials")
 	}

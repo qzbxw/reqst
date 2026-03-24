@@ -13,7 +13,6 @@ import {
   fetchWallets,
   getStoredToken,
   markInvoicePaid,
-  updateContactEmail,
 } from "../lib/api";
 import { buildAuthHref } from "../lib/routing";
 import type { Invoice, MeResponse, Network, Wallet } from "../lib/types";
@@ -130,6 +129,8 @@ const COPY = {
     invoicePulseCopy: "Статистика за последние 24 часа.",
     walletCoverageTitle: "Доступные сети",
     walletCoverageCopy: "Проверьте готовность ваших кошельков к приему платежей.",
+    activeWalletsSummary: "сетей подключено",
+    totalInvoicesSummary: "инвойсов создано всего",
     plansTitle: "Ваш тариф",
     plansCopy: "Управление подпиской и выбор условий обслуживания.",
     plansAction: "Биллинг",
@@ -143,27 +144,13 @@ const COPY = {
     enterpriseSpotlightTitle: "B2B Infrastructure",
     enterpriseSpotlightBody: "Максимальные лимиты и приоритетная поддержка включены.",
     settingsTitle: "Настройки профиля",
-    settingsCopy: "Управление аккаунтом и параметрами интерфейса.",
+    settingsCopy: "Язык, сессия и Telegram-авторизация.",
     interfaceTitle: "Интерфейс",
     interfaceCopy: "Язык и сессия.",
     consoleLanguage: "Язык",
     sessionActions: "Сессия",
     logoutHint: "Завершение текущей сессии.",
     sellerIdLabel: "ID",
-    emailLabel: "Email",
-    emailPlaceholder: "vlad@example.com",
-    passwordLabel: "Пароль",
-    passwordPlaceholder: "8+ символов",
-    codeLabel: "Код",
-    codePlaceholder: "123456",
-    saveEmail: "Сохранить Email",
-    savingEmail: "...",
-    sendCode: "Код",
-    sendingCode: "...",
-    emailLinked: "Email сохранен.",
-    emailAccessTitle: "Контактный Email",
-    emailAccessCopy: "Используется только для важных уведомлений и связи с поддержкой.",
-    emailAccessReady: "Используется только как контакт.",
     telegramAccessTitle: "Telegram-аккаунт",
     telegramAccessCopy: "Ваш основной и единственный способ авторизации в системе.",
     telegramLinked: "Привязан",
@@ -250,6 +237,8 @@ const COPY = {
     invoicePulseCopy: "Stats for the last 24 hours.",
     walletCoverageTitle: "Network Readiness",
     walletCoverageCopy: "Check which networks are ready to accept payments.",
+    activeWalletsSummary: "networks connected",
+    totalInvoicesSummary: "invoices created overall",
     plansTitle: "Plan",
     plansCopy: "Subscription and billing.",
     plansAction: "Billing",
@@ -263,27 +252,13 @@ const COPY = {
     enterpriseSpotlightTitle: "B2B Infrastructure",
     enterpriseSpotlightBody: "Maximum limits and priority delivery are active.",
     settingsTitle: "Profile Settings",
-    settingsCopy: "Identity and preferences.",
+    settingsCopy: "Language, session, and Telegram access.",
     interfaceTitle: "Interface",
     interfaceCopy: "Language and session.",
     consoleLanguage: "Language",
     sessionActions: "Session",
     logoutHint: "End current session.",
     sellerIdLabel: "ID",
-    emailLabel: "Email",
-    emailPlaceholder: "name@company.com",
-    passwordLabel: "Password",
-    passwordPlaceholder: "8+ characters",
-    codeLabel: "Code",
-    codePlaceholder: "123456",
-    saveEmail: "Save Email",
-    savingEmail: "...",
-    sendCode: "Code",
-    sendingCode: "...",
-    emailLinked: "Email saved.",
-    emailAccessTitle: "Contact Email",
-    emailAccessCopy: "Used for important notifications and support communication only.",
-    emailAccessReady: "Stored as contact info only.",
     telegramAccessTitle: "Telegram Account",
     telegramAccessCopy: "Telegram is now the only sign-in method for Reqst.",
     telegramLinked: "Linked",
@@ -363,9 +338,7 @@ export function SellerConsolePage() {
   const text = COPY[language];
   const [session, setSession] = useState<SessionState | null>(null);
   const [error, setError] = useState("");
-  const [accountMessage, setAccountMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const [savingEmail, setSavingEmail] = useState(false);
   const [activePanel, setActivePanel] = useState<PanelKey>("overview");
   const [freshLink, setFreshLink] = useState("");
   const [walletForm, setWalletForm] = useState<{ network: Network; address: string }>({ network: "TON", address: "" });
@@ -382,11 +355,6 @@ export function SellerConsolePage() {
       return selected;
     }
     return "pro";
-  });
-  const [emailForm, setEmailForm] = useState({
-    email: "",
-    code: "",
-    password: "",
   });
   const isTelegramMiniApp = Boolean(window.Telegram?.WebApp?.initData);
 
@@ -427,11 +395,6 @@ export function SellerConsolePage() {
         me,
         wallets: wallets.items ?? [],
         invoices: invoices.items ?? [],
-      });
-      setEmailForm({
-        email: me.seller.email ?? "",
-        code: "",
-        password: "",
       });
       setError("");
     } catch (err) {
@@ -536,44 +499,9 @@ export function SellerConsolePage() {
   function handleLogout() {
     clearStoredToken();
     setSession(null);
-    setEmailForm({ email: "", code: "", password: "" });
     setFreshLink("");
     setActivePanel("overview");
-    setAccountMessage("");
     navigate("/auth", { replace: true });
-  }
-
-  async function handleEmailSave(event: FormEvent) {
-    event.preventDefault();
-    if (!session) {
-      return;
-    }
-    try {
-      setSavingEmail(true);
-      const result = await updateContactEmail(session.token, {
-        email: emailForm.email.trim(),
-      });
-      setSession((current) => current ? {
-        ...current,
-        me: {
-          ...current.me,
-          seller: result.seller,
-        },
-      } : current);
-      setEmailForm((current) => ({
-        ...current,
-        email: result.seller.email ?? current.email,
-        code: "",
-        password: "",
-      }));
-      setError("");
-      setAccountMessage(text.emailLinked);
-    } catch (err) {
-      setError((err as Error).message);
-      setAccountMessage("");
-    } finally {
-      setSavingEmail(false);
-    }
   }
 
   const checkoutOrigin = useMemo(() => window.location.origin, []);
@@ -599,6 +527,7 @@ export function SellerConsolePage() {
       ready: activeNetworks.has(option.value),
     }));
   }, [session]);
+  const activeWalletCount = walletCoverage.filter((network) => network.ready).length;
 
   return (
     <main className="shell shell-console shell-console--redesigned">
@@ -628,7 +557,6 @@ export function SellerConsolePage() {
         ) : null}
       </header>
 
-      {accountMessage ? <div className="auth-feedback auth-feedback--success">{accountMessage}</div> : null}
       {error ? <div className="alert">{error}</div> : null}
 
       {!session ? (
@@ -695,44 +623,14 @@ export function SellerConsolePage() {
                       <p>{!session.me.plan.is_pro ? `${text.trialLeft}: ${session.me.plan.trial_remaining}` : `${session.me.plan.price_usd} USDT / ${session.me.plan.billing_days}d`}</p>
                     </article>
                     <article className="console-stat-card">
-                      <span>{text.defaultNetwork}</span>
-                      <strong><LiveValue value={formatNetworkLabel(session.me.seller.default_network)} /></strong>
-                      <p>{text.activeWallets}</p>
+                      <span>{text.activeWallets}</span>
+                      <strong><LiveValue value={activeWalletCount} /></strong>
+                      <p>{activeWalletCount}/{walletCoverage.length} {text.activeWalletsSummary}</p>
                     </article>
                     <article className="console-stat-card">
-                      <span>{text.invoices}</span>
+                      <span>{text.totalInvoices}</span>
                       <strong><LiveValue value={session.invoices.length} /></strong>
-                      <p>{text.totalInvoices}</p>
-                    </article>
-                  </div>
-
-                  <div className="console-overview-tiles">
-                    <article className="console-link-card console-link-card--billing">
-                      <span>{text.plansTitle}</span>
-                      <strong>{selectedBillingPlan ? selectedBillingPlan.name : text.unlockPro}</strong>
-                      <p>{text.plansCopy}</p>
-                      <div className="console-link-actions">
-                        <Link className="inline-link" to={`/developers?plan=${billingPlan}`}>
-                          {text.plansAction}
-                        </Link>
-                        <Link className="inline-link" to={billingPlan === "enterprise" ? "/enterprise" : "/dev"}>
-                          {billingPlan === "enterprise" ? "Enterprise" : "Dev"}
-                        </Link>
-                      </div>
-                    </article>
-
-                    <article className="console-link-card">
-                      <span>{text.developersTitle}</span>
-                      <strong>{text.developersAction}</strong>
-                      <p>{text.developersCopy}</p>
-                      <div className="console-link-actions">
-                        <Link className="inline-link" to={`/developers?plan=${billingPlan}`}>
-                          {text.developersAction}
-                        </Link>
-                        <button type="button" className="ghost-button compact-button" onClick={() => setActivePanel("settings")}>
-                          {text.tabs.settings}
-                        </button>
-                      </div>
+                      <p>{text.totalInvoicesSummary}</p>
                     </article>
                   </div>
                 </article>
@@ -999,49 +897,7 @@ export function SellerConsolePage() {
                     </div>
                   </div>
 
-                  <div className="console-stat-grid console-stat-grid--profile">
-                    <article className="console-stat-card">
-                      <span>{text.seller}</span>
-                      <strong><LiveValue value={sellerHandle} /></strong>
-                      <p>{text.sellerIdLabel}: {session.me.seller.telegram_id ?? text.telegramMissing}</p>
-                    </article>
-                    <article className="console-stat-card">
-                      <span>{text.plan}</span>
-                      <strong><LiveValue value={session.me.plan.name} /></strong>
-                      <p>{!session.me.plan.is_pro ? `${text.trialLeft}: ${session.me.plan.trial_remaining}` : `${session.me.plan.price_usd} USDT / ${session.me.plan.billing_days}d`}</p>
-                    </article>
-                  </div>
-
                   <div className="console-access-grid">
-                    <article className="console-access-card">
-                      <div className="console-access-head">
-                        <h3>{text.emailAccessTitle}</h3>
-                        <p>{text.emailAccessCopy}</p>
-                      </div>
-
-                      <form onSubmit={handleEmailSave} className="console-email-form console-email-form--credentials">
-                        <label>
-                          {text.emailLabel}
-                          <input
-                            type="email"
-                            placeholder={text.emailPlaceholder}
-                            value={emailForm.email}
-                            onChange={(event) => setEmailForm((current) => ({ ...current, email: event.target.value }))}
-                          />
-                        </label>
-                        <button type="submit" disabled={savingEmail}>
-                          {savingEmail ? text.savingEmail : text.saveEmail}
-                        </button>
-                      </form>
-
-                      {session.me.seller.email ? (
-                        <div className="console-access-status">
-                          <strong>{session.me.seller.email}</strong>
-                          <p>{text.emailAccessReady}</p>
-                        </div>
-                      ) : null}
-                    </article>
-
                     <article className="console-access-card">
                       <div className="console-access-head">
                         <h3>{text.telegramAccessTitle}</h3>

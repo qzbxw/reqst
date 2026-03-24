@@ -11,9 +11,10 @@ import {
   fetchDeveloperUsage,
   fetchMe,
   fetchWebhookEndpoints,
+  getApiBase,
   getStoredToken,
 } from "../lib/api";
-import type { APIKey, DeveloperUsageResponse, MeResponse, Network, WebhookEndpoint } from "../lib/types";
+import type { APIKey, DeveloperUsageResponse, MeResponse, Network, Plan, WebhookEndpoint } from "../lib/types";
 import { useUI } from "../lib/ui";
 
 const PLAN_OPTIONS = [
@@ -31,12 +32,18 @@ const NETWORK_OPTIONS: Array<{ value: Network; label: string }> = [
   { value: "TON", label: "TON" },
 ];
 
+const DEFAULT_SCOPES = ["invoices:read", "invoices:write"];
+
 const COPY = {
   ru: {
     title: "Разработчикам",
     body: "Инструменты интеграции: управление API-ключами и настройка вебхуков.",
+    heroKicker: "Developer API",
+    heroPanelTitle: "Control Surface",
+    heroPanelBody: "Единое рабочее пространство для документации, ключей, лимитов и событий доставки.",
     portalNav: {
-      access: "Статус",
+      docs: "Документация",
+      access: "Доступ",
       security: "Ключи",
       delivery: "Webhooks",
       usage: "Лимиты",
@@ -67,27 +74,18 @@ const COPY = {
     createHook: "Добавить эндпоинт",
     remove: "Удалить",
     copy: "Копировать",
+    copied: "Скопировано",
     latestSecret: "Ваш новый API-ключ",
     latestCheckout: "Ссылка на оплату тарифа",
-    sampleTitle: "Пример запроса",
-    sampleBody: "Создание нового инвойса через POST-запрос.",
     monthly: "Запросов в месяц",
     rpm: "Запросов в минуту (RPM)",
     keyCap: "Всего ключей",
     hookCap: "Активных вебхуков",
     emptyKeys: "У вас пока нет активных API-ключей.",
     emptyHooks: "Webhook-эндпоинты еще не настроены.",
-    heroCards: [],
-    railTitle: "Возможности",
     currentPlan: "План",
     currentStatus: "Статус",
     accessEnabled: "Доступ открыт",
-    rails: [
-      "Активация планов через платеж.",
-      "Выпуск API-ключей.",
-      "Настройка Webhooks.",
-      "Мониторинг квот.",
-    ],
     lockedTitle: "Портал",
     lockedBody: "Авторизуйтесь для управления ключами.",
     summaryTitle: "Текущий статус",
@@ -96,11 +94,13 @@ const COPY = {
     plansBody: "Выберите подходящий уровень доступа.",
     plans: [
       {
+        code: "dev",
         name: "Reqst Dev",
         badge: "Продукт",
         body: "Стандартный набор инструментов для интеграции.",
       },
       {
+        code: "enterprise",
         name: "Reqst Enterprise",
         badge: "B2B",
         body: "Максимальная производительность и приоритетная очередь событий.",
@@ -113,12 +113,101 @@ const COPY = {
     deliveryTitle: "События",
     deliveryBody: "Настройка доставки уведомлений о платежах.",
     sampleCardTitle: "Quick Start",
-    sampleCardBody: "Пример POST-запроса.",
+    sampleCardBody: "API request example.",
+    docsTitle: "Документация",
+    docsBody: "Полный reference для Seller API, webhook flow и onboarding интеграции.",
+    docsQuickstartTitle: "Первый запуск",
+    docsQuickstartBody: "Минимальный путь от аккаунта до первой автоматической оплаты.",
+    docsReferenceTitle: "Endpoint Reference",
+    docsReferenceBody: "Основные методы Seller API v1.",
+    docsVerificationTitle: "Проверка подписи",
+    docsVerificationBody: "Reqst подписывает тело webhook через HMAC SHA-256 по шаблону timestamp.payload.",
+    docsEventsTitle: "События",
+    docsEventsBody: "Список event types, которые доступны для доставки.",
+    docsChecklistTitle: "Production Checklist",
+    docsChecklistBody: "Короткая проверка перед запуском в прод.",
+    docsBaseUrl: "Base URL",
+    docsAuthMode: "Авторизация",
+    docsScopes: "Scopes",
+    docsResponseTitle: "Пример ответа",
+    docsCodeLabel: "Пример запроса",
+    docsOpenConsole: "Открыть консоль",
+    docsSignIn: "Авторизоваться",
+    docsBrowsePlans: "Смотреть планы",
+    docsManagerTitle: "Менеджер доступа",
+    docsManagerBody: "Выпуск ключей, rotation, webhooks и usage живут на одной странице без отдельного backoffice.",
+    workspaceTitle: "Workspace",
+    workspaceBody: "Текущее состояние интеграции и конфигурации аккаунта.",
+    sellerAccount: "Аккаунт",
+    baseNetwork: "Базовая сеть",
+    apiStatus: "Статус API",
+    webhooksStatus: "Статус webhooks",
+    enabled: "Включено",
+    disabled: "Выключено",
+    signInRequiredTitle: "Нужна авторизация",
+    signInRequiredBody: "Документация доступна сразу, а менеджер ключей и webhooks открывается после входа в seller-аккаунт.",
+    upgradeRequiredTitle: "Нужен API-план",
+    upgradeRequiredBody: "Менеджер API-ключей, лимиты и webhooks доступны на Reqst Dev и Reqst Enterprise.",
+    webhooksUpgradeBody: "Webhooks активируются вместе с планом, который поддерживает событийную доставку.",
+    scopesTitle: "Права доступа",
+    scopeReadTitle: "Чтение инвойсов",
+    scopeReadBody: "GET /v1/me, GET /v1/invoices и GET /v1/invoices/:id.",
+    scopeWriteTitle: "Создание и отмена",
+    scopeWriteBody: "POST /v1/invoices и POST /v1/invoices/:id/cancel.",
+    createdAt: "Создан",
+    lastUsed: "Последнее использование",
+    lastDelivery: "Последняя доставка",
+    lastSuccess: "Последний успех",
+    signingSecret: "Signing Secret",
+    openCheckout: "Открыть checkout",
+    limitsTitle: "Лимиты и квоты",
+    limitsBody: "Живой срез нагрузки по аккаунту и what-to-watch перед production rollout.",
+    retryPolicy: "Повторы webhook",
+    monthWindow: "Окно месяца",
+    monthWindowBody: "Квота обнуляется первого числа каждого месяца по UTC.",
+    docsSteps: [
+      "Авторизуйтесь в seller-аккаунт и активируйте Reqst Dev или Reqst Enterprise.",
+      "Выпустите live API key и сохраните секрет на стороне backend.",
+      "Создайте инвойс через POST /v1/invoices и сохраните id/public_id.",
+      "Подключите webhook endpoint и валидируйте подпись перед обработкой события.",
+    ],
+    docsChecklist: [
+      "Храните live-ключи только на сервере и не отдавайте их в браузер.",
+      "Возвращайте 2xx быстро, а тяжёлую обработку webhook переносите в очередь.",
+      "Проверяйте X-Reqst-Timestamp и X-Reqst-Signature до разбора JSON.",
+      "Мониторьте monthly cap и RPM, особенно перед batch-операциями.",
+    ],
+    docsEvents: [
+      {
+        name: "invoice.paid",
+        body: "Инвойс подтвержден и может считаться успешной оплатой.",
+      },
+      {
+        name: "invoice.underpaid",
+        body: "Получена сумма ниже ожидаемой, нужен сценарий дозачисления или ручной разбор.",
+      },
+      {
+        name: "invoice.manual_review",
+        body: "Платеж нельзя принять автоматически и он вынесен на ручную проверку.",
+      },
+      {
+        name: "invoice.expired",
+        body: "Инвойс истек или был завершен в статусе expired.",
+      },
+      {
+        name: "subscription.activated",
+        body: "Подписочный checkout успешно активировал платный план.",
+      },
+    ],
   },
   en: {
     title: "Developer Portal",
     body: "Integration toolkit: manage API keys and configure webhooks.",
+    heroKicker: "Developer API",
+    heroPanelTitle: "Control Surface",
+    heroPanelBody: "A single workspace for docs, credentials, delivery settings, and live quota visibility.",
     portalNav: {
+      docs: "Docs",
       access: "Access",
       security: "Keys",
       delivery: "Webhooks",
@@ -150,27 +239,18 @@ const COPY = {
     createHook: "Add hook",
     remove: "Remove",
     copy: "Copy",
+    copied: "Copied",
     latestSecret: "Your New API Key",
     latestCheckout: "Billing Link",
-    sampleTitle: "Request sample",
-    sampleBody: "Create an invoice via API.",
     monthly: "Monthly Requests",
     rpm: "Requests Per Minute (RPM)",
     keyCap: "API Keys",
     hookCap: "Webhook Endpoints",
     emptyKeys: "No active API keys found.",
     emptyHooks: "No webhook endpoints configured.",
-    heroCards: [],
-    railTitle: "Features",
     currentPlan: "Plan",
     currentStatus: "Status",
     accessEnabled: "Active",
-    rails: [
-      "Self-serve plan activation.",
-      "API key issuance.",
-      "Webhook delivery.",
-      "Real-time usage tracking.",
-    ],
     lockedTitle: "Portal",
     lockedBody: "Sign in to manage credentials.",
     summaryTitle: "Access Status",
@@ -179,11 +259,13 @@ const COPY = {
     plansBody: "Select your integration layer.",
     plans: [
       {
+        code: "dev",
         name: "Reqst Dev",
         badge: "Product",
         body: "API keys and webhooks for teams.",
       },
       {
+        code: "enterprise",
         name: "Reqst Enterprise",
         badge: "B2B",
         body: "High limits and priority delivery.",
@@ -197,8 +279,123 @@ const COPY = {
     deliveryBody: "Webhook endpoint management.",
     sampleCardTitle: "Quick Start",
     sampleCardBody: "API request example.",
+    docsTitle: "Documentation",
+    docsBody: "Full Seller API reference, webhook flow, and integration onboarding.",
+    docsQuickstartTitle: "Getting Started",
+    docsQuickstartBody: "The shortest path from account access to the first automated payment.",
+    docsReferenceTitle: "Endpoint Reference",
+    docsReferenceBody: "Core methods available in Seller API v1.",
+    docsVerificationTitle: "Signature Verification",
+    docsVerificationBody: "Reqst signs webhook payloads with HMAC SHA-256 using the timestamp.payload format.",
+    docsEventsTitle: "Events",
+    docsEventsBody: "Event types currently available for delivery.",
+    docsChecklistTitle: "Production Checklist",
+    docsChecklistBody: "A short pre-launch checklist for real traffic.",
+    docsBaseUrl: "Base URL",
+    docsAuthMode: "Authorization",
+    docsScopes: "Scopes",
+    docsResponseTitle: "Response Example",
+    docsCodeLabel: "Request Example",
+    docsOpenConsole: "Open Console",
+    docsSignIn: "Sign in",
+    docsBrowsePlans: "Browse Plans",
+    docsManagerTitle: "Access Manager",
+    docsManagerBody: "Key issuance, rotation, webhooks, and usage live together without a separate back office.",
+    workspaceTitle: "Workspace",
+    workspaceBody: "Live integration status and account configuration.",
+    sellerAccount: "Account",
+    baseNetwork: "Default Network",
+    apiStatus: "API Status",
+    webhooksStatus: "Webhooks Status",
+    enabled: "Enabled",
+    disabled: "Disabled",
+    signInRequiredTitle: "Authentication required",
+    signInRequiredBody: "Documentation is public, while key and webhook management unlock after signing into a seller account.",
+    upgradeRequiredTitle: "API plan required",
+    upgradeRequiredBody: "API key management, quotas, and webhooks are available on Reqst Dev and Reqst Enterprise.",
+    webhooksUpgradeBody: "Webhooks become available with plans that include event delivery.",
+    scopesTitle: "Permissions",
+    scopeReadTitle: "Invoice reads",
+    scopeReadBody: "GET /v1/me, GET /v1/invoices, and GET /v1/invoices/:id.",
+    scopeWriteTitle: "Create and cancel",
+    scopeWriteBody: "POST /v1/invoices and POST /v1/invoices/:id/cancel.",
+    createdAt: "Created",
+    lastUsed: "Last used",
+    lastDelivery: "Last delivery",
+    lastSuccess: "Last success",
+    signingSecret: "Signing Secret",
+    openCheckout: "Open checkout",
+    limitsTitle: "Limits & Quotas",
+    limitsBody: "Live account load, hard caps, and what to watch before a production rollout.",
+    retryPolicy: "Webhook retries",
+    monthWindow: "Monthly window",
+    monthWindowBody: "Quota resets on the first day of each month in UTC.",
+    docsSteps: [
+      "Sign into your seller account and activate Reqst Dev or Reqst Enterprise.",
+      "Issue a live API key and store the secret on your backend.",
+      "Create an invoice through POST /v1/invoices and persist the id/public_id pair.",
+      "Attach a webhook endpoint and verify the signature before processing the event.",
+    ],
+    docsChecklist: [
+      "Keep live keys server-side only and never expose them to the browser.",
+      "Return 2xx quickly and move heavy webhook processing into a queue.",
+      "Verify X-Reqst-Timestamp and X-Reqst-Signature before parsing the JSON body.",
+      "Monitor monthly cap and RPM carefully before batch operations.",
+    ],
+    docsEvents: [
+      {
+        name: "invoice.paid",
+        body: "The invoice is confirmed and can be treated as a successful payment.",
+      },
+      {
+        name: "invoice.underpaid",
+        body: "Received amount is below the expected total and needs top-up or manual handling.",
+      },
+      {
+        name: "invoice.manual_review",
+        body: "The payment cannot be auto-classified and requires operator review.",
+      },
+      {
+        name: "invoice.expired",
+        body: "The invoice expired or was closed in the expired state.",
+      },
+      {
+        name: "subscription.activated",
+        body: "A subscription checkout successfully enabled a paid plan.",
+      },
+    ],
   },
 } as const;
+
+function formatDate(value: string | null | undefined, language: "ru" | "en") {
+  if (!value) {
+    return language === "ru" ? "Никогда" : "Never";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(language === "ru" ? "ru-RU" : "en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function formatQuota(current: number, limit: number, language: "ru" | "en") {
+  if (limit <= 0) {
+    return language === "ru" ? `${current} / без лимита` : `${current} / unlimited`;
+  }
+  return `${current} / ${limit}`;
+}
+
+function formatPlanMetric(value: number, language: "ru" | "en") {
+  if (value <= 0) {
+    return language === "ru" ? "Без лимита" : "Unlimited";
+  }
+  return String(value);
+}
 
 export function DeveloperPortalPage() {
   const { language } = useUI();
@@ -212,12 +409,14 @@ export function DeveloperPortalPage() {
   const [loading, setLoading] = useState(Boolean(token));
   const [checkoutUrl, setCheckoutUrl] = useState("");
   const [latestSecret, setLatestSecret] = useState("");
+  const [copiedId, setCopiedId] = useState("");
   const [billingPlan, setBillingPlan] = useState<"dev" | "enterprise">(() => {
     const selected = new URLSearchParams(window.location.search).get("plan");
     return selected === "enterprise" ? "enterprise" : "dev";
   });
   const [billingNetwork, setBillingNetwork] = useState<Network>("TRON");
   const [keyLabel, setKeyLabel] = useState("");
+  const [keyScopes, setKeyScopes] = useState<string[]>(DEFAULT_SCOPES);
   const [hookForm, setHookForm] = useState({ label: "", url: "" });
 
   useEffect(() => {
@@ -227,6 +426,14 @@ export function DeveloperPortalPage() {
     }
     void loadPortal(token);
   }, [token]);
+
+  useEffect(() => {
+    if (!copiedId) {
+      return;
+    }
+    const timer = window.setTimeout(() => setCopiedId(""), 1400);
+    return () => window.clearTimeout(timer);
+  }, [copiedId]);
 
   async function loadPortal(sessionToken: string) {
     try {
@@ -253,6 +460,7 @@ export function DeveloperPortalPage() {
     if (!token) {
       return;
     }
+
     try {
       const invoice = await createBillingCheckout(token, {
         payable_network: billingNetwork,
@@ -270,10 +478,16 @@ export function DeveloperPortalPage() {
     if (!token) {
       return;
     }
+    if (keyScopes.length === 0) {
+      setError(language === "ru" ? "Выберите хотя бы один scope" : "Select at least one scope");
+      return;
+    }
+
     try {
-      const result = await createAPIKey(token, { label: keyLabel.trim() });
+      const result = await createAPIKey(token, { label: keyLabel.trim(), scopes: keyScopes });
       setLatestSecret(result.secret);
       setKeyLabel("");
+      setKeyScopes(DEFAULT_SCOPES);
       await loadPortal(token);
     } catch (err) {
       setError((err as Error).message);
@@ -284,6 +498,7 @@ export function DeveloperPortalPage() {
     if (!token) {
       return;
     }
+
     try {
       await deleteAPIKey(token, id);
       await loadPortal(token);
@@ -297,6 +512,7 @@ export function DeveloperPortalPage() {
     if (!token) {
       return;
     }
+
     try {
       await createWebhookEndpoint(token, {
         label: hookForm.label.trim(),
@@ -313,6 +529,7 @@ export function DeveloperPortalPage() {
     if (!token) {
       return;
     }
+
     try {
       await deleteWebhookEndpoint(token, id);
       await loadPortal(token);
@@ -321,217 +538,712 @@ export function DeveloperPortalPage() {
     }
   }
 
+  async function handleCopy(value: string, id: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedId(id);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  function toggleScope(scope: string) {
+    setKeyScopes((current) =>
+      current.includes(scope) ? current.filter((item) => item !== scope) : [...current, scope],
+    );
+  }
+
+  const developerApiBase = useMemo(() => {
+    const base = getApiBase();
+    const origin = window.location.origin.replace(/\/+$/, "");
+    return `${(base || origin).replace(/\/+$/, "")}/v1`;
+  }, []);
+
+  const selectedPlanCode = me?.plan.code === "enterprise" || me?.plan.code === "dev" ? me.plan.code : billingPlan;
+  const monthlyRequests = usage?.usage.monthly_requests ?? 0;
+  const monthlyLimit = usage?.usage.monthly_limit ?? me?.plan.monthly_cap ?? 0;
+  const minuteRequests = usage?.usage.requests_this_min ?? 0;
+  const minuteLimit = usage?.usage.minute_limit ?? me?.plan.rpm_limit ?? 0;
+  const retryLimit = usage?.usage.webhook_retry_limit ?? me?.plan.webhook_retries ?? 0;
+  const currentPlanName = me?.plan.name ?? text.summaryFallback;
+  const currentPlanLabel = me?.plan.code?.toUpperCase() ?? "TRIAL";
+  const canManageApi = Boolean(me?.plan.has_api);
+  const canManageWebhooks = Boolean(me?.plan.has_webhooks);
+  const availableApiPlans = (me?.plans ?? []).filter((plan) => plan.code === "dev" || plan.code === "enterprise");
+
+  const scopeOptions = [
+    {
+      value: "invoices:read",
+      title: text.scopeReadTitle,
+      body: text.scopeReadBody,
+    },
+    {
+      value: "invoices:write",
+      title: text.scopeWriteTitle,
+      body: text.scopeWriteBody,
+    },
+  ];
+
+  const endpointDocs = language === "ru"
+    ? [
+        {
+          method: "GET",
+          path: "/v1/me",
+          scope: "API key",
+          title: "Проверка ключа",
+          body: "Возвращает seller, план, usage и scopes текущего ключа.",
+        },
+        {
+          method: "GET",
+          path: "/v1/invoices?page=1&page_size=20",
+          scope: "invoices:read",
+          title: "Список инвойсов",
+          body: "Выдает paginated-список инвойсов, созданных вашим seller-аккаунтом.",
+        },
+        {
+          method: "POST",
+          path: "/v1/invoices",
+          scope: "invoices:write",
+          title: "Создать инвойс",
+          body: "Создает новый checkout с title, base_amount_usd, payable_network и optional expires_in_minutes.",
+        },
+        {
+          method: "GET",
+          path: "/v1/invoices/:id",
+          scope: "invoices:read",
+          title: "Получить инвойс",
+          body: "Возвращает полную карточку инвойса по внутреннему numeric id.",
+        },
+        {
+          method: "POST",
+          path: "/v1/invoices/:id/cancel",
+          scope: "invoices:write",
+          title: "Отменить инвойс",
+          body: "Завершает seller-managed invoice в статусе expired.",
+        },
+      ]
+    : [
+        {
+          method: "GET",
+          path: "/v1/me",
+          scope: "API key",
+          title: "Validate key",
+          body: "Returns the seller, current plan, usage, and active key scopes.",
+        },
+        {
+          method: "GET",
+          path: "/v1/invoices?page=1&page_size=20",
+          scope: "invoices:read",
+          title: "List invoices",
+          body: "Returns a paginated list of invoices created under your seller account.",
+        },
+        {
+          method: "POST",
+          path: "/v1/invoices",
+          scope: "invoices:write",
+          title: "Create invoice",
+          body: "Creates a new checkout with title, base_amount_usd, payable_network, and optional expires_in_minutes.",
+        },
+        {
+          method: "GET",
+          path: "/v1/invoices/:id",
+          scope: "invoices:read",
+          title: "Get invoice",
+          body: "Returns the full invoice payload by internal numeric id.",
+        },
+        {
+          method: "POST",
+          path: "/v1/invoices/:id/cancel",
+          scope: "invoices:write",
+          title: "Cancel invoice",
+          body: "Transitions a seller-managed invoice into the expired state.",
+        },
+      ];
+
   const sampleCurl = useMemo(() => {
     const secret = latestSecret || "rk_live_your_key";
+    const network = me?.seller.default_network ?? "TRON";
     return [
-      "curl -X POST https://api.reqst.xyz/v1/invoices \\",
+      `curl -X POST ${developerApiBase}/invoices \\`,
       `  -H "Authorization: Bearer ${secret}" \\`,
       '  -H "Content-Type: application/json" \\',
-      '  -d \'{"title":"Product Subscription","base_amount_usd":"25.00","payable_network":"TRON"}\'',
+      `  -d '{"title":"Product Subscription","base_amount_usd":"25.00","payable_network":"${network}","expires_in_minutes":30}'`,
     ].join("\n");
-  }, [latestSecret]);
-  const selectedPlanMeta = text.plans.find((plan) => plan.name.toLowerCase().includes(billingPlan));
+  }, [developerApiBase, latestSecret, me?.seller.default_network]);
+
+  const sampleResponse = useMemo(
+    () =>
+      JSON.stringify(
+        {
+          id: 1842,
+          public_id: "REQST-9N2QK7",
+          title: "Product Subscription",
+          base_amount_usd: "25.00",
+          payable_amount: "25.000000",
+          payable_network: me?.seller.default_network ?? "TRON",
+          destination_address: "TXYZ...merchant",
+          status: "awaiting_payment",
+          checkout_url: `${window.location.origin}/checkout/REQST-9N2QK7`,
+          payment_uri: "tron:TXYZ...merchant?amount=25.000000",
+        },
+        null,
+        2,
+      ),
+    [me?.seller.default_network],
+  );
+
+  const verifyWebhookSnippet = useMemo(
+    () =>
+      [
+        'import crypto from "node:crypto";',
+        "",
+        "function verifyReqstSignature(rawBody, timestamp, signature, secret) {",
+        '  const signed = `${timestamp}.${rawBody}`;',
+        '  const expected = "v1=" + crypto.createHmac("sha256", secret).update(signed).digest("hex");',
+        "  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));",
+        "}",
+      ].join("\n"),
+    [],
+  );
+
+  const planCards = availableApiPlans.length > 0
+    ? availableApiPlans.map((plan) => ({
+        code: plan.code,
+        name: plan.name,
+        badge: plan.code === "enterprise" ? "B2B" : "API",
+        body: plan.code === "enterprise"
+          ? `${formatPlanMetric(plan.requests_per_minute, language)} RPM · ${formatPlanMetric(plan.api_key_limit, language)} keys`
+          : `${formatPlanMetric(plan.requests_per_minute, language)} RPM · ${formatPlanMetric(plan.api_key_limit, language)} keys`,
+      }))
+    : text.plans;
+
+  function renderCopyLabel(id: string) {
+    return copiedId === id ? text.copied : text.copy;
+  }
+
+  function renderAuthNotice(title: string, body: string) {
+    return (
+      <div className="dev-portal__locked-state">
+        <div>
+          <strong>{title}</strong>
+          <p>{body}</p>
+        </div>
+        <div className="dev-portal__cta-row">
+          <Link className="dev-portal__button" to="/auth">
+            {text.authAction}
+          </Link>
+          <Link className="dev-portal__button dev-portal__button--ghost" to="/console">
+            {text.docsOpenConsole}
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <main className="lend-page">
-      <div className="lend-backdrop lend-backdrop--grid" />
-      <div className="lend-backdrop lend-backdrop--glow lend-backdrop--left" />
-      <div className="lend-backdrop lend-backdrop--glow lend-backdrop--right" />
+    <main className="dev-portal">
+      <div className="dev-portal__backdrop dev-portal__backdrop--grid" />
+      <div className="dev-portal__backdrop dev-portal__backdrop--glow dev-portal__backdrop--left" />
+      <div className="dev-portal__backdrop dev-portal__backdrop--glow dev-portal__backdrop--right" />
 
-      <div className="lend-shell">
-        <header className="lend-topbar">
-          <div className="lend-topbar-main">
-            <Link className="lend-brand" to="/">
-              <strong>reqst</strong>
+      <div className="dev-portal__shell">
+        <header className="dev-portal__topbar">
+          <Link className="dev-portal__brand" to="/">
+            <strong>reqst</strong>
+          </Link>
+          <div className="dev-portal__topbar-actions">
+            <Link className="dev-portal__button dev-portal__button--ghost" to="/">
+              {text.back}
             </Link>
-            <div className="lend-topbar-actions">
-              <Link className="lend-secondary" to="/">{text.back}</Link>
-              <Link className="lend-primary" to="/console">{text.console}</Link>
-            </div>
+            <Link className="dev-portal__button" to="/console">
+              {text.console}
+            </Link>
           </div>
         </header>
 
-        <section className="lend-hero page-section-offset">
-          <div className="lend-hero-copy">
-            <span className="lend-section-kicker">Integration</span>
+        <section className="dev-portal__hero">
+          <div className="dev-portal__hero-copy">
+            <span className="dev-portal__kicker">{text.heroKicker}</span>
             <h1>{text.title}</h1>
             <p>{text.body}</p>
 
-            <div className="lend-cta-row" aria-label="portal sections">
-              <span className="lend-chip">{text.portalNav.access}</span>
-              <span className="lend-chip">{text.portalNav.security}</span>
-              <span className="lend-chip">{text.portalNav.delivery}</span>
-              <span className="lend-chip">{text.portalNav.usage}</span>
+            <div className="dev-portal__anchor-row" aria-label="portal sections">
+              <a className="dev-portal__anchor" href="#docs">{text.portalNav.docs}</a>
+              <a className="dev-portal__anchor" href="#access">{text.portalNav.access}</a>
+              <a className="dev-portal__anchor" href="#keys">{text.portalNav.security}</a>
+              <a className="dev-portal__anchor" href="#webhooks">{text.portalNav.delivery}</a>
+              <a className="dev-portal__anchor" href="#limits">{text.portalNav.usage}</a>
+            </div>
+
+            <div className="dev-portal__signal-grid">
+              <article className="dev-portal__signal-card">
+                <span>{text.docsBaseUrl}</span>
+                <strong>{developerApiBase}</strong>
+              </article>
+              <article className="dev-portal__signal-card">
+                <span>{text.docsAuthMode}</span>
+                <strong>Bearer rk_live_...</strong>
+              </article>
+              <article className="dev-portal__signal-card">
+                <span>{text.docsScopes}</span>
+                <strong>{DEFAULT_SCOPES.join(" · ")}</strong>
+              </article>
             </div>
           </div>
 
-          <aside className="lend-hero-side">
-            <article className="lend-card">
-              <span className="lend-section-kicker">{text.plansTitle}</span>
-              <h3 style={{ marginTop: '1rem' }}>{text.plansBody}</h3>
-              <div className="lend-panel-grid" style={{ marginTop: '1.5rem' }}>
-                {text.plans.map((plan) => (
-                  <article key={plan.name} className="lend-stack-card" style={{ 
-                    borderColor: selectedPlanMeta?.name === plan.name ? 'rgba(255, 148, 77, 0.4)' : undefined,
-                    background: selectedPlanMeta?.name === plan.name ? 'rgba(255, 148, 77, 0.08)' : undefined
-                  }}>
-                    <span style={{ fontSize: '0.65rem' }}>{plan.badge}</span>
-                    <strong>{plan.name}</strong>
-                    <p style={{ fontSize: '0.85rem' }}>{plan.body}</p>
-                  </article>
-                ))}
+          <aside className="dev-portal__hero-side">
+            <article className="dev-portal__panel dev-portal__panel--spotlight">
+              <span className="dev-portal__kicker">{text.heroPanelTitle}</span>
+              <h2>{text.workspaceTitle}</h2>
+              <p>{text.heroPanelBody}</p>
+
+              <div className="dev-portal__hero-metrics">
+                <div className="dev-portal__hero-metric">
+                  <span>{text.currentPlan}</span>
+                  <strong>{currentPlanName}</strong>
+                </div>
+                <div className="dev-portal__hero-metric">
+                  <span>{text.apiStatus}</span>
+                  <strong>{me?.plan.has_api ? text.enabled : text.summaryFallback}</strong>
+                </div>
+                <div className="dev-portal__hero-metric">
+                  <span>{text.webhooksStatus}</span>
+                  <strong>{me?.plan.has_webhooks ? text.enabled : text.disabled}</strong>
+                </div>
+                <div className="dev-portal__hero-metric">
+                  <span>{text.docsEventsTitle}</span>
+                  <strong>{text.docsEvents.length}</strong>
+                </div>
+              </div>
+
+              <div className="dev-portal__hero-actions">
+                <Link className="dev-portal__button" to={token ? "/console" : "/auth"}>
+                  {token ? text.docsOpenConsole : text.docsSignIn}
+                </Link>
+                <a className="dev-portal__button dev-portal__button--ghost" href="#docs">
+                  {text.docsTitle}
+                </a>
               </div>
             </article>
           </aside>
         </section>
 
         {error ? <div className="alert page-section-offset--compact">{error}</div> : null}
-        {loading ? <p className="muted page-section-offset--compact" style={{ textAlign: 'center' }}>{language === "ru" ? "Загрузка..." : "Loading..."}</p> : null}
+        {loading ? (
+          <p className="muted page-section-offset--compact" style={{ textAlign: "center" }}>
+            {language === "ru" ? "Загрузка..." : "Loading..."}
+          </p>
+        ) : null}
 
-        {!token || !me ? (
-          <div className="lend-stacked-section page-section-offset">
-            <article className="lend-final" style={{ textAlign: 'left', marginTop: 0 }}>
-              <span className="lend-section-kicker">Access Required</span>
-              <h2>{text.authTitle}</h2>
-              <p>{text.authBody}</p>
-              <div className="lend-cta-row">
-                <Link className="lend-primary" style={{ padding: '1rem 2rem' }} to="/auth">
-                  {text.authAction}
-                </Link>
+        <div className="dev-portal__layout">
+          <aside className="dev-portal__sidebar">
+            <article className="dev-portal__panel">
+              <span className="dev-portal__kicker">{text.summaryTitle}</span>
+              <h3>{text.workspaceTitle}</h3>
+              <div className="dev-portal__sidebar-grid">
+                <div className="dev-portal__sidebar-item">
+                  <span>{text.sellerAccount}</span>
+                  <strong>{me ? `@${me.seller.username}` : text.lockedTitle}</strong>
+                </div>
+                <div className="dev-portal__sidebar-item">
+                  <span>{text.baseNetwork}</span>
+                  <strong>{me?.seller.default_network ?? "TRON"}</strong>
+                </div>
+                <div className="dev-portal__sidebar-item">
+                  <span>{text.currentPlan}</span>
+                  <strong>{currentPlanLabel}</strong>
+                </div>
+                <div className="dev-portal__sidebar-item">
+                  <span>{text.currentStatus}</span>
+                  <strong>{me?.plan.has_api ? text.accessEnabled : text.summaryFallback}</strong>
+                </div>
               </div>
             </article>
-          </div>
-        ) : (
-          <div className="lend-flow page-section-offset">
-            <div className="console-stack">
-              <article className="lend-card">
-                <span className="lend-section-kicker">{text.summaryTitle}</span>
-                <div className="lend-overview-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', marginTop: '1.5rem' }}>
-                  <div className="lend-stack-card">
-                    <span>{text.currentPlan}</span>
-                    <strong>{me.plan.code.toUpperCase()}</strong>
+
+            <article className="dev-portal__panel">
+              <span className="dev-portal__kicker">{text.plansTitle}</span>
+              <h3>{text.plansBody}</h3>
+              <div className="dev-portal__plan-grid">
+                {planCards.map((plan) => (
+                  <article
+                    key={plan.code}
+                    className={`dev-portal__plan-card ${selectedPlanCode === plan.code ? "is-selected" : ""}`}
+                  >
+                    <span>{plan.badge}</span>
+                    <strong>{plan.name}</strong>
+                    <p>{plan.body}</p>
+                  </article>
+                ))}
+              </div>
+            </article>
+
+            <article className="dev-portal__panel">
+              <span className="dev-portal__kicker">{text.docsManagerTitle}</span>
+              <p className="page-copy-reset">{text.docsManagerBody}</p>
+              <div className="dev-portal__sidebar-links">
+                <a href="#docs">{text.docsTitle}</a>
+                <a href="#access">{text.billingTitle}</a>
+                <a href="#keys">{text.keysTitle}</a>
+                <a href="#webhooks">{text.hooksTitle}</a>
+                <a href="#limits">{text.limitsTitle}</a>
+              </div>
+            </article>
+          </aside>
+
+          <div className="dev-portal__content">
+            <section className="dev-portal__panel" id="docs">
+              <div className="dev-portal__section-head">
+                <div>
+                  <span className="dev-portal__kicker">{text.docsTitle}</span>
+                  <h2>{text.docsQuickstartTitle}</h2>
+                </div>
+                <p>{text.docsBody}</p>
+              </div>
+
+              <div className="dev-portal__docs-grid">
+                <article className="dev-portal__subpanel">
+                  <span className="dev-portal__eyebrow">{text.docsQuickstartTitle}</span>
+                  <strong>{text.docsQuickstartBody}</strong>
+                  <ol className="dev-portal__steps">
+                    {text.docsSteps.map((step) => (
+                      <li key={step}>{step}</li>
+                    ))}
+                  </ol>
+                </article>
+
+                <article className="dev-portal__subpanel">
+                  <span className="dev-portal__eyebrow">{text.docsCodeLabel}</span>
+                  <strong>{developerApiBase}/invoices</strong>
+                  <div className="dev-portal__meta-row">
+                    <span>{text.docsBaseUrl}</span>
+                    <code>{developerApiBase}</code>
                   </div>
-                  <div className="lend-stack-card">
-                    <span>{text.currentStatus}</span>
-                    <strong style={{ color: me.plan.has_api ? "var(--ok)" : "var(--warn)" }}>
-                      {me.plan.has_api ? text.accessEnabled : text.summaryFallback}
-                    </strong>
+                  <div className="dev-portal__meta-row">
+                    <span>{text.docsAuthMode}</span>
+                    <code>Authorization: Bearer rk_live_...</code>
                   </div>
+                  <div className="dev-portal__code-wrap">
+                    <pre className="dev-portal__code-block"><code>{sampleCurl}</code></pre>
+                    <button type="button" className="dev-portal__small-button" onClick={() => void handleCopy(sampleCurl, "curl")}>
+                      {renderCopyLabel("curl")}
+                    </button>
+                  </div>
+                </article>
+              </div>
+
+              <div className="dev-portal__docs-grid">
+                <article className="dev-portal__subpanel">
+                  <span className="dev-portal__eyebrow">{text.docsReferenceTitle}</span>
+                  <strong>{text.docsReferenceBody}</strong>
+                  <div className="dev-portal__endpoint-grid">
+                    {endpointDocs.map((endpoint) => (
+                      <article key={`${endpoint.method}-${endpoint.path}`} className="dev-portal__endpoint-card">
+                        <div className="dev-portal__endpoint-head">
+                          <span className={`dev-portal__method dev-portal__method--${endpoint.method.toLowerCase()}`}>
+                            {endpoint.method}
+                          </span>
+                          <code>{endpoint.path}</code>
+                        </div>
+                        <strong>{endpoint.title}</strong>
+                        <p>{endpoint.body}</p>
+                        <small>{endpoint.scope}</small>
+                      </article>
+                    ))}
+                  </div>
+                </article>
+
+                <article className="dev-portal__subpanel">
+                  <span className="dev-portal__eyebrow">{text.docsResponseTitle}</span>
+                  <strong>{text.sampleCardTitle}</strong>
+                  <div className="dev-portal__code-wrap">
+                    <pre className="dev-portal__code-block"><code>{sampleResponse}</code></pre>
+                    <button
+                      type="button"
+                      className="dev-portal__small-button"
+                      onClick={() => void handleCopy(sampleResponse, "response")}
+                    >
+                      {renderCopyLabel("response")}
+                    </button>
+                  </div>
+                </article>
+              </div>
+
+              <div className="dev-portal__docs-grid">
+                <article className="dev-portal__subpanel">
+                  <span className="dev-portal__eyebrow">{text.docsVerificationTitle}</span>
+                  <strong>{text.docsVerificationBody}</strong>
+                  <div className="dev-portal__meta-stack">
+                    <div className="dev-portal__meta-row">
+                      <span>X-Reqst-Event</span>
+                      <code>invoice.paid</code>
+                    </div>
+                    <div className="dev-portal__meta-row">
+                      <span>X-Reqst-Timestamp</span>
+                      <code>unix seconds</code>
+                    </div>
+                    <div className="dev-portal__meta-row">
+                      <span>X-Reqst-Signature</span>
+                      <code>v1=hex(hmac_sha256(secret, timestamp.payload))</code>
+                    </div>
+                  </div>
+                  <div className="dev-portal__code-wrap">
+                    <pre className="dev-portal__code-block"><code>{verifyWebhookSnippet}</code></pre>
+                    <button
+                      type="button"
+                      className="dev-portal__small-button"
+                      onClick={() => void handleCopy(verifyWebhookSnippet, "verify")}
+                    >
+                      {renderCopyLabel("verify")}
+                    </button>
+                  </div>
+                </article>
+
+                <article className="dev-portal__subpanel">
+                  <span className="dev-portal__eyebrow">{text.docsEventsTitle}</span>
+                  <strong>{text.docsEventsBody}</strong>
+                  <div className="dev-portal__event-list">
+                    {text.docsEvents.map((eventItem) => (
+                      <article key={eventItem.name} className="dev-portal__event-item">
+                        <code>{eventItem.name}</code>
+                        <p>{eventItem.body}</p>
+                      </article>
+                    ))}
+                  </div>
+                </article>
+              </div>
+
+              <article className="dev-portal__subpanel">
+                <span className="dev-portal__eyebrow">{text.docsChecklistTitle}</span>
+                <strong>{text.docsChecklistBody}</strong>
+                <div className="dev-portal__checklist">
+                  {text.docsChecklist.map((item) => (
+                    <div key={item} className="dev-portal__checklist-item">
+                      <span />
+                      <p>{item}</p>
+                    </div>
+                  ))}
                 </div>
               </article>
+            </section>
 
-              {!me.plan.has_api ? (
-                <article className="lend-card" style={{ marginTop: '1rem' }}>
-                  <span className="lend-section-kicker">Billing</span>
-                  <h3 style={{ marginTop: '1rem' }}>{text.billingTitle}</h3>
-                  <p>{text.billingBody}</p>
-                  
-                  <div className="form-grid" style={{ marginTop: '1.5rem' }}>
-                    <label>
-                      {text.plan}
-                      <CustomSelect
-                        value={billingPlan}
-                        options={PLAN_OPTIONS.map((option) => ({ ...option }))}
-                        ariaLabel={text.plan}
-                        onChange={(value) => setBillingPlan(value as "dev" | "enterprise")}
-                      />
-                    </label>
-                    <label>
-                      {text.network}
-                      <CustomSelect
-                        value={billingNetwork}
-                        options={NETWORK_OPTIONS}
-                        ariaLabel={text.network}
-                        onChange={(value) => setBillingNetwork(value)}
-                      />
-                    </label>
-                  </div>
-                  <button type="button" className="lend-primary" style={{ width: '100%', marginTop: '1.5rem' }} onClick={() => void handleCreateCheckout()}>
-                    {text.createCheckout}
-                  </button>
-                  {checkoutUrl ? (
-                    <div className="lend-stack-card" style={{ marginTop: '1rem', background: 'rgba(255, 255, 255, 0.05)' }}>
-                      <span>{text.latestCheckout}</span>
-                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.5rem' }}>
-                        <code style={{ flex: 1, fontSize: '0.8rem', opacity: 0.8 }}>{checkoutUrl}</code>
-                        <button type="button" className="lend-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }} onClick={() => navigator.clipboard.writeText(checkoutUrl)}>
-                          {text.copy}
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
-                </article>
+            <section className="dev-portal__panel" id="access">
+              <div className="dev-portal__section-head">
+                <div>
+                  <span className="dev-portal__kicker">{text.summaryTitle}</span>
+                  <h2>{text.billingTitle}</h2>
+                </div>
+                <p>{text.workspaceBody}</p>
+              </div>
+
+              {!token || !me ? (
+                renderAuthNotice(text.signInRequiredTitle, text.signInRequiredBody)
               ) : (
                 <>
-                  <article className="lend-card" style={{ marginTop: '1rem' }}>
-                    <span className="lend-section-kicker">Usage</span>
-                    <h3 style={{ marginTop: '1rem' }}>{text.usageTitle}</h3>
-                    <div className="lend-overview-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', marginTop: '1.5rem' }}>
-                      <div className="lend-stack-card">
-                        <span>{text.monthly}</span>
-                        <strong>{usage?.usage.monthly_requests ?? 0} / {usage?.usage.monthly_limit ?? me.plan.monthly_cap}</strong>
-                      </div>
-                      <div className="lend-stack-card">
-                        <span>{text.rpm}</span>
-                        <strong>{usage?.usage.requests_this_min ?? 0} / {usage?.usage.minute_limit ?? me.plan.rpm_limit}</strong>
-                      </div>
-                      <div className="lend-stack-card">
-                        <span>{text.keyCap}</span>
-                        <strong>{apiKeys.length} / {me.plan.api_key_limit}</strong>
-                      </div>
-                      <div className="lend-stack-card">
-                        <span>{text.hookCap}</span>
-                        <strong>{webhooks.length}</strong>
-                      </div>
-                    </div>
-                  </article>
+                  <div className="dev-portal__metric-grid">
+                    <article className="dev-portal__metric-card">
+                      <span>{text.currentPlan}</span>
+                      <strong>{me.plan.name}</strong>
+                      <p>{text.upgradeBody}</p>
+                    </article>
+                    <article className="dev-portal__metric-card">
+                      <span>{text.currentStatus}</span>
+                      <strong>{me.plan.has_api ? text.accessEnabled : text.summaryFallback}</strong>
+                      <p>{text.usageBody}</p>
+                    </article>
+                    <article className="dev-portal__metric-card">
+                      <span>{text.monthly}</span>
+                      <strong>{formatQuota(monthlyRequests, monthlyLimit, language)}</strong>
+                      <p>{text.monthWindowBody}</p>
+                    </article>
+                    <article className="dev-portal__metric-card">
+                      <span>{text.retryPolicy}</span>
+                      <strong>{formatPlanMetric(retryLimit, language)}</strong>
+                      <p>{text.hooksBody}</p>
+                    </article>
+                  </div>
 
-                  <article className="lend-card" style={{ marginTop: '1rem' }}>
-                    <span className="lend-section-kicker">Security</span>
-                    <h3 style={{ marginTop: '1rem' }}>{text.keysTitle}</h3>
-                    <form onSubmit={handleCreateKey} className="form-grid" style={{ marginTop: '1.5rem' }}>
+                  {!me.plan.has_api ? (
+                    <div className="dev-portal__billing-grid">
+                      <article className="dev-portal__subpanel">
+                        <span className="dev-portal__eyebrow">{text.upgradeTitle}</span>
+                        <strong>{text.billingBody}</strong>
+                        <div className="dev-portal__form-grid">
+                          <label>
+                            {text.plan}
+                            <CustomSelect
+                              value={billingPlan}
+                              options={PLAN_OPTIONS.map((option) => ({ ...option }))}
+                              ariaLabel={text.plan}
+                              onChange={(value) => setBillingPlan(value as "dev" | "enterprise")}
+                            />
+                          </label>
+                          <label>
+                            {text.network}
+                            <CustomSelect
+                              value={billingNetwork}
+                              options={NETWORK_OPTIONS}
+                              ariaLabel={text.network}
+                              onChange={(value) => setBillingNetwork(value)}
+                            />
+                          </label>
+                        </div>
+                        <button type="button" className="dev-portal__button dev-portal__button--full" onClick={() => void handleCreateCheckout()}>
+                          {text.createCheckout}
+                        </button>
+                      </article>
+
+                      <article className="dev-portal__subpanel">
+                        <span className="dev-portal__eyebrow">{text.latestCheckout}</span>
+                        <strong>{text.upgradeRequiredTitle}</strong>
+                        <p className="page-copy-reset">{text.upgradeRequiredBody}</p>
+                        {checkoutUrl ? (
+                          <div className="dev-portal__inline-card">
+                            <code>{checkoutUrl}</code>
+                            <div className="dev-portal__inline-actions">
+                              <button type="button" className="dev-portal__small-button" onClick={() => void handleCopy(checkoutUrl, "checkout")}>
+                                {renderCopyLabel("checkout")}
+                              </button>
+                              <a className="dev-portal__small-link" href={checkoutUrl} target="_blank" rel="noreferrer">
+                                {text.openCheckout}
+                              </a>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="dev-portal__inline-card">
+                            <span>{text.upgradeBody}</span>
+                          </div>
+                        )}
+                      </article>
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </section>
+
+            <section className="dev-portal__panel" id="keys">
+              <div className="dev-portal__section-head">
+                <div>
+                  <span className="dev-portal__kicker">{text.securityTitle}</span>
+                  <h2>{text.keysTitle}</h2>
+                </div>
+                <p>{text.keysBody}</p>
+              </div>
+
+              {!token || !me ? (
+                renderAuthNotice(text.signInRequiredTitle, text.signInRequiredBody)
+              ) : !canManageApi ? (
+                <div className="dev-portal__locked-state">
+                  <div>
+                    <strong>{text.upgradeRequiredTitle}</strong>
+                    <p>{text.upgradeRequiredBody}</p>
+                  </div>
+                  <a className="dev-portal__button" href="#access">
+                    {text.docsBrowsePlans}
+                  </a>
+                </div>
+              ) : (
+                <>
+                  <form onSubmit={handleCreateKey} className="dev-portal__stack">
+                    <div className="dev-portal__form-grid">
                       <label>
                         {text.keyLabel}
-                        <input value={keyLabel} placeholder={text.keyPlaceholder} onChange={(event) => setKeyLabel(event.target.value)} />
+                        <input
+                          value={keyLabel}
+                          placeholder={text.keyPlaceholder}
+                          onChange={(event) => setKeyLabel(event.target.value)}
+                        />
                       </label>
-                      <button type="submit" className="lend-primary" style={{ width: '100%' }}>{text.createKey}</button>
-                    </form>
-                    {latestSecret ? (
-                      <div className="lend-stack-card" style={{ marginTop: '1rem', background: 'rgba(99, 215, 157, 0.1)', borderColor: 'rgba(99, 215, 157, 0.3)' }}>
+                      <button type="submit" className="dev-portal__button dev-portal__button--full">
+                        {text.createKey}
+                      </button>
+                    </div>
+
+                    <div className="dev-portal__scope-grid">
+                      {scopeOptions.map((scope) => (
+                        <label key={scope.value} className={`dev-portal__scope-card ${keyScopes.includes(scope.value) ? "is-active" : ""}`}>
+                          <input
+                            type="checkbox"
+                            checked={keyScopes.includes(scope.value)}
+                            onChange={() => toggleScope(scope.value)}
+                          />
+                          <div>
+                            <strong>{scope.title}</strong>
+                            <p>{scope.body}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </form>
+
+                  {latestSecret ? (
+                    <div className="dev-portal__secret-card">
+                      <div>
                         <span>{text.latestSecret}</span>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.5rem' }}>
-                          <code style={{ flex: 1 }}>{latestSecret}</code>
-                          <button type="button" className="lend-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }} onClick={() => navigator.clipboard.writeText(latestSecret)}>
-                            {text.copy}
-                          </button>
-                        </div>
+                        <code>{latestSecret}</code>
                       </div>
-                    ) : null}
-                    <div className="lend-panel-grid" style={{ marginTop: '1.5rem' }}>
-                      {apiKeys.map((key) => (
-                        <div key={key.id} className="lend-stack-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <button type="button" className="dev-portal__small-button" onClick={() => void handleCopy(latestSecret, "secret")}>
+                        {renderCopyLabel("secret")}
+                      </button>
+                    </div>
+                  ) : null}
+
+                  <div className="dev-portal__resource-list">
+                    {apiKeys.map((key) => (
+                      <article key={key.id} className="dev-portal__resource-card">
+                        <div className="dev-portal__resource-head">
                           <div>
                             <strong>{key.label}</strong>
-                            <code style={{ fontSize: '0.85rem', opacity: 0.7 }}>{key.prefix}***</code>
+                            <code>{key.prefix}***</code>
                           </div>
-                          <button type="button" className="lend-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', borderColor: 'rgba(255, 137, 125, 0.3)', color: 'var(--danger)' }} onClick={() => void handleDeleteKey(key.id)}>
+                          <button
+                            type="button"
+                            className="dev-portal__small-button dev-portal__small-button--danger"
+                            onClick={() => void handleDeleteKey(key.id)}
+                          >
                             {text.remove}
                           </button>
                         </div>
-                      ))}
-                      {!apiKeys.length ? <p className="muted" style={{ textAlign: 'center' }}>{text.emptyKeys}</p> : null}
-                    </div>
-                  </article>
+                        <div className="dev-portal__pill-row">
+                          {key.scopes.map((scope) => (
+                            <span key={scope} className="dev-portal__pill">{scope}</span>
+                          ))}
+                        </div>
+                        <div className="dev-portal__resource-meta">
+                          <span>{text.createdAt}: {formatDate(key.created_at, language)}</span>
+                          <span>{text.lastUsed}: {formatDate(key.last_used_at, language)}</span>
+                        </div>
+                      </article>
+                    ))}
+                    {!apiKeys.length ? <p className="muted">{text.emptyKeys}</p> : null}
+                  </div>
                 </>
               )}
-            </div>
+            </section>
 
-            <div className="console-stack">
-              {me.plan.has_webhooks ? (
-                <article className="lend-card">
-                  <span className="lend-section-kicker">Events</span>
-                  <h3 style={{ marginTop: '1rem' }}>{text.hooksTitle}</h3>
-                  <form onSubmit={handleCreateWebhook} className="form-grid" style={{ marginTop: '1.5rem' }}>
+            <section className="dev-portal__panel" id="webhooks">
+              <div className="dev-portal__section-head">
+                <div>
+                  <span className="dev-portal__kicker">{text.deliveryTitle}</span>
+                  <h2>{text.hooksTitle}</h2>
+                </div>
+                <p>{text.hooksBody}</p>
+              </div>
+
+              {!token || !me ? (
+                renderAuthNotice(text.signInRequiredTitle, text.signInRequiredBody)
+              ) : !canManageWebhooks ? (
+                <div className="dev-portal__locked-state">
+                  <div>
+                    <strong>{text.upgradeRequiredTitle}</strong>
+                    <p>{text.webhooksUpgradeBody}</p>
+                  </div>
+                  <a className="dev-portal__button" href="#access">
+                    {text.docsBrowsePlans}
+                  </a>
+                </div>
+              ) : (
+                <>
+                  <form onSubmit={handleCreateWebhook} className="dev-portal__form-grid dev-portal__form-grid--three">
                     <label>
                       {text.hookLabel}
                       <input
@@ -548,52 +1260,113 @@ export function DeveloperPortalPage() {
                         onChange={(event) => setHookForm((current) => ({ ...current, url: event.target.value }))}
                       />
                     </label>
-                    <button type="submit" className="lend-primary" style={{ width: '100%' }}>{text.createHook}</button>
+                    <button type="submit" className="dev-portal__button dev-portal__button--full">
+                      {text.createHook}
+                    </button>
                   </form>
-                  <div className="lend-panel-grid" style={{ marginTop: '1.5rem' }}>
+
+                  <div className="dev-portal__resource-list">
                     {webhooks.map((hook) => (
-                      <div key={hook.id} className="lend-stack-card">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <strong>{hook.label}</strong>
-                          <button type="button" className="lend-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', color: 'var(--danger)' }} onClick={() => void handleDeleteWebhook(hook.id)}>
+                      <article key={hook.id} className="dev-portal__resource-card">
+                        <div className="dev-portal__resource-head">
+                          <div>
+                            <strong>{hook.label}</strong>
+                            <code>{hook.url}</code>
+                          </div>
+                          <button
+                            type="button"
+                            className="dev-portal__small-button dev-portal__small-button--danger"
+                            onClick={() => void handleDeleteWebhook(hook.id)}
+                          >
                             {text.remove}
                           </button>
                         </div>
-                        <code style={{ display: 'block', marginTop: '0.5rem', fontSize: '0.8rem', opacity: 0.7 }}>{hook.url}</code>
-                        <div style={{ marginTop: '1rem', padding: '0.8rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '12px' }}>
-                          <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', opacity: 0.5 }}>Signing Secret</span>
-                          <code style={{ display: 'block', marginTop: '0.2rem', fontSize: '0.8rem' }}>{hook.secret}</code>
+                        <div className="dev-portal__inline-card">
+                          <span>{text.signingSecret}</span>
+                          <div className="dev-portal__inline-actions">
+                            <code>{hook.secret}</code>
+                            <button type="button" className="dev-portal__small-button" onClick={() => void handleCopy(hook.secret, `hook-${hook.id}`)}>
+                              {renderCopyLabel(`hook-${hook.id}`)}
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                        <div className="dev-portal__resource-meta">
+                          <span>{text.createdAt}: {formatDate(hook.created_at, language)}</span>
+                          <span>{text.lastDelivery}: {formatDate(hook.last_delivery_at, language)}</span>
+                          <span>{text.lastSuccess}: {formatDate(hook.last_success_at, language)}</span>
+                        </div>
+                      </article>
                     ))}
-                    {!webhooks.length ? <p className="muted" style={{ textAlign: 'center' }}>{text.emptyHooks}</p> : null}
+                    {!webhooks.length ? <p className="muted">{text.emptyHooks}</p> : null}
                   </div>
-                </article>
-              ) : null}
+                </>
+              )}
+            </section>
 
-              <article className="lend-card" style={{ marginTop: '1rem' }}>
-                <span className="lend-section-kicker">Implementation</span>
-                <h3 style={{ marginTop: '1rem' }}>{text.sampleCardTitle}</h3>
-                <p>{text.sampleCardBody}</p>
-                <pre style={{ 
-                  marginTop: '1.5rem',
-                  padding: '1.2rem',
-                  background: '#000',
-                  borderRadius: '18px',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  overflowX: 'auto',
-                  fontSize: '0.85rem',
-                  lineHeight: '1.5',
-                  color: '#ffb88b'
-                }}>
-                  <code>{sampleCurl}</code>
-                </pre>
-              </article>
-            </div>
+            <section className="dev-portal__panel" id="limits">
+              <div className="dev-portal__section-head">
+                <div>
+                  <span className="dev-portal__kicker">{text.usageTitle}</span>
+                  <h2>{text.limitsTitle}</h2>
+                </div>
+                <p>{text.limitsBody}</p>
+              </div>
+
+              {!token || !me ? (
+                renderAuthNotice(text.signInRequiredTitle, text.signInRequiredBody)
+              ) : !canManageApi ? (
+                <div className="dev-portal__locked-state">
+                  <div>
+                    <strong>{text.upgradeRequiredTitle}</strong>
+                    <p>{text.upgradeRequiredBody}</p>
+                  </div>
+                  <a className="dev-portal__button" href="#access">
+                    {text.docsBrowsePlans}
+                  </a>
+                </div>
+              ) : (
+                <>
+                  <div className="dev-portal__metric-grid">
+                    <article className="dev-portal__metric-card">
+                      <span>{text.monthly}</span>
+                      <strong>{formatQuota(monthlyRequests, monthlyLimit, language)}</strong>
+                      <p>{text.monthWindowBody}</p>
+                    </article>
+                    <article className="dev-portal__metric-card">
+                      <span>{text.rpm}</span>
+                      <strong>{formatQuota(minuteRequests, minuteLimit, language)}</strong>
+                      <p>{text.usageBody}</p>
+                    </article>
+                    <article className="dev-portal__metric-card">
+                      <span>{text.keyCap}</span>
+                      <strong>{formatQuota(apiKeys.length, me.plan.api_key_limit, language)}</strong>
+                      <p>{text.securityBody}</p>
+                    </article>
+                    <article className="dev-portal__metric-card">
+                      <span>{text.hookCap}</span>
+                      <strong>{webhooks.length}</strong>
+                      <p>{text.deliveryBody}</p>
+                    </article>
+                  </div>
+
+                  <div className="dev-portal__docs-grid">
+                    <article className="dev-portal__subpanel">
+                      <span className="dev-portal__eyebrow">{text.monthWindow}</span>
+                      <strong>{text.monthWindowBody}</strong>
+                      <p className="page-copy-reset">{text.limitsBody}</p>
+                    </article>
+                    <article className="dev-portal__subpanel">
+                      <span className="dev-portal__eyebrow">{text.retryPolicy}</span>
+                      <strong>{formatPlanMetric(retryLimit, language)}</strong>
+                      <p className="page-copy-reset">{text.hooksBody}</p>
+                    </article>
+                  </div>
+                </>
+              )}
+            </section>
           </div>
-        )}
+        </div>
       </div>
     </main>
   );
 }
-

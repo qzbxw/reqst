@@ -35,7 +35,7 @@ func main() {
 	defer st.Close()
 
 	authService := service.NewAuthService(st, cfg.JWTSecret, cfg.TelegramBotToken, cfg.AllowInsecureDevAuth, cfg.TelegramInitMaxAge)
-	adminService := service.NewAdminService(cfg.AdminUsername, cfg.AdminPasswordHash, cfg.AdminJWTSecret, cfg.AdminSessionTTL)
+	adminService := service.NewAdminService(cfg.AdminUsername, cfg.AdminPassword, cfg.AdminJWTSecret, cfg.AdminSessionTTL)
 	invoiceService := service.NewInvoiceService(st, cfg.TonUSDOverride)
 	paymentService := service.NewPaymentService(st)
 

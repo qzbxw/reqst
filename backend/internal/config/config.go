@@ -31,7 +31,7 @@ type Config struct {
 	ArbitrumRPCURL       string
 	BSCRPCURL            string
 	AdminUsername        string
-	AdminPasswordHash    string
+	AdminPassword        string
 	AdminJWTSecret       string
 	AdminSessionTTL      time.Duration
 }
@@ -58,7 +58,7 @@ func Load() (Config, error) {
 		ArbitrumRPCURL:       envOrDefault("ARBITRUM_RPC_URL", "https://arbitrum.llamarpc.com"),
 		BSCRPCURL:            envOrDefault("BSC_RPC_URL", "https://bsc.llamarpc.com"),
 		AdminUsername:        os.Getenv("ADMIN_USERNAME"),
-		AdminPasswordHash:    os.Getenv("ADMIN_PASSWORD_HASH"),
+		AdminPassword:        os.Getenv("ADMIN_PASSWORD"),
 		AdminJWTSecret:       envOrDefault("ADMIN_JWT_SECRET", os.Getenv("JWT_SECRET")),
 	}
 	cfg.MetricsPort = envOrDefault("METRICS_PORT", defaultMetricsPort(cfg.AppRuntime))
