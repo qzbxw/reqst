@@ -39,34 +39,34 @@ const COPY = {
     title: "Разработчикам",
     body: "Инструменты интеграции: управление API-ключами и настройка вебхуков.",
     heroKicker: "Developer API",
-    heroPanelTitle: "Control Surface",
-    heroPanelBody: "Единое рабочее пространство для документации, ключей, лимитов и событий доставки.",
+    heroPanelTitle: "Панель управления",
+    heroPanelBody: "Единое рабочее пространство для работы с документацией, ключами, лимитами и событиями.",
     portalNav: {
       docs: "Документация",
       access: "Доступ",
-      security: "Ключи",
-      delivery: "Webhooks",
+      security: "API-ключи",
+      delivery: "Вебхуки",
       usage: "Лимиты",
     },
     authTitle: "Вход",
-    authBody: "Используйте основной аккаунт для выпуска ключей.",
+    authBody: "Авторизуйтесь в основном аккаунте для управления API-ключами.",
     authAction: "Войти",
-    back: "Главная",
+    back: "На главную",
     console: "Консоль",
-    upgradeTitle: "Активация API-доступа",
-    upgradeBody: "Для работы с API необходимо выбрать один из поддерживаемых тарифов.",
-    plan: "План",
-    network: "Сеть оплаты",
+    upgradeTitle: "Активация API",
+    upgradeBody: "Для работы с API необходимо выбрать один из доступных тарифов.",
+    plan: "Тариф",
+    network: "Сеть для оплаты",
     createCheckout: "Оплатить",
     usageTitle: "Использование квот",
-    usageBody: "Мониторинг текущего потребления и лимитов API.",
+    usageBody: "Мониторинг текущего потребления и лимитов API в реальном времени.",
     keysTitle: "API-ключи",
-    keysBody: "Ваш секретный ключ будет показан только один раз при создании. Пожалуйста, сохраните его в надежном месте.",
+    keysBody: "Секретный ключ отображается только один раз при создании. Обязательно сохраните его в надежном месте.",
     hooksTitle: "Webhook-эндпоинты",
     hooksBody: "Все события подписываются заголовком X-Reqst-Signature для проверки подлинности на вашей стороне.",
-    keyLabel: "Описание ключа",
+    keyLabel: "Название ключа",
     keyPlaceholder: "Например: Production Backend",
-    createKey: "Выпустить ключ",
+    createKey: "Создать ключ",
     hookLabel: "Описание",
     hookLabelPlaceholder: "Обработчик платежей",
     hookUrl: "URL",
@@ -83,15 +83,15 @@ const COPY = {
     hookCap: "Активных вебхуков",
     emptyKeys: "У вас пока нет активных API-ключей.",
     emptyHooks: "Webhook-эндпоинты еще не настроены.",
-    currentPlan: "План",
+    currentPlan: "Тариф",
     currentStatus: "Статус",
-    accessEnabled: "Доступ открыт",
+    accessEnabled: "Доступ разрешен",
     lockedTitle: "Портал",
     lockedBody: "Авторизуйтесь для управления ключами.",
     summaryTitle: "Текущий статус",
     summaryFallback: "API недоступно",
-    plansTitle: "Планы",
-    plansBody: "Выберите подходящий уровень доступа.",
+    plansTitle: "Тарифные планы",
+    plansBody: "Тарифы Reqst Dev и Enterprise открывают доступ к API и доставке вебхуков.",
     plans: [
       {
         code: "dev",
@@ -107,96 +107,111 @@ const COPY = {
       },
     ],
     billingTitle: "Биллинг",
-    billingBody: "Сформируйте инвойс для активации или продления доступа.",
+    billingBody: "Сформируйте инвойс для активации или продления доступа к API.",
     securityTitle: "Безопасность",
     securityBody: "Управление ключами доступа к API.",
     deliveryTitle: "События",
-    deliveryBody: "Настройка доставки уведомлений о платежах.",
-    sampleCardTitle: "Quick Start",
-    sampleCardBody: "API request example.",
-    docsTitle: "Документация",
-    docsBody: "Полный reference для Seller API, webhook flow и onboarding интеграции.",
-    docsQuickstartTitle: "Первый запуск",
-    docsQuickstartBody: "Минимальный путь от аккаунта до первой автоматической оплаты.",
-    docsReferenceTitle: "Endpoint Reference",
-    docsReferenceBody: "Основные методы Seller API v1.",
+    deliveryBody: "Настройка уведомлений о платежах через вебхуки.",
+    sampleCardTitle: "Пример данных",
+    sampleCardBody: "Пример JSON-ответа API.",
+    docsTitle: "Reqst API",
+    docsBody: "Руководство по работе с Reqst API, выпуску ключей и настройке вебхуков.",
+    docsQuickstartTitle: "Быстрый старт",
+    docsQuickstartBody: "Минимальный путь от создания аккаунта до первой автоматической оплаты.",
+    docsReferenceTitle: "Справочник API",
+    docsReferenceBody: "Описание всех публичных методов Reqst API v1, доступных по ключу.",
     docsVerificationTitle: "Проверка подписи",
-    docsVerificationBody: "Reqst подписывает тело webhook через HMAC SHA-256 по шаблону timestamp.payload.",
-    docsEventsTitle: "События",
-    docsEventsBody: "Список event types, которые доступны для доставки.",
-    docsChecklistTitle: "Production Checklist",
-    docsChecklistBody: "Короткая проверка перед запуском в прод.",
+    docsVerificationBody: "Reqst подписывает каждое событие через HMAC SHA-256 (timestamp.payload).",
+    docsEventsTitle: "Типы событий",
+    docsEventsBody: "Список событий, доступных для отправки на ваш эндпоинт.",
+    docsChecklistTitle: "Чек-лист перед запуском",
+    docsChecklistBody: "Краткая проверка готовности перед выходом в продакшн.",
+    docsApiCardTitle: "Reqst API v1",
+    docsApiCardBody: "Методы для работы с инвойсами: чтение, создание и отмена.",
+    docsKeysCardTitle: "API-ключи",
+    docsKeysCardBody: "Управление ключами и правами доступа доступно в секции ниже.",
+    docsHooksCardTitle: "Webhooks",
+    docsHooksCardBody: "Настройка эндпоинтов и секретов подписи находится в нижней части страницы.",
+    docsStartColumnTitle: "Reqst API v1",
+    docsStartColumnBody: "Текущая версия API: 5 основных методов для полной автоматизации платежей.",
+    docsAsideColumnTitle: "Ключи и вебхуки",
+    docsAsideColumnBody: "Управляйте доступом и уведомлениями прямо на этой странице — всё в одном месте.",
+    docsAccessManagerTitle: "Управление доступом",
+    docsAccessManagerBody: "Настройка API-ключей, вебхуков и лимитов в соответствующих разделах ниже.",
+    docsAccessKeysCta: "Ключи",
+    docsAccessHooksCta: "Вебхуки",
+    docsAccessLimitsCta: "Лимиты",
     docsBaseUrl: "Base URL",
     docsAuthMode: "Авторизация",
-    docsScopes: "Scopes",
+    docsScopes: "Области доступа",
     docsResponseTitle: "Пример ответа",
     docsCodeLabel: "Пример запроса",
     docsOpenConsole: "Открыть консоль",
     docsSignIn: "Авторизоваться",
-    docsBrowsePlans: "Смотреть планы",
+    docsBrowsePlans: "Посмотреть тарифы",
     docsManagerTitle: "Менеджер доступа",
-    docsManagerBody: "Выпуск ключей, rotation, webhooks и usage живут на одной странице без отдельного backoffice.",
-    workspaceTitle: "Workspace",
-    workspaceBody: "Текущее состояние интеграции и конфигурации аккаунта.",
-    sellerAccount: "Аккаунт",
-    baseNetwork: "Базовая сеть",
+    docsManagerBody: "Выпуск ключей, ротация, вебхуки и статистика доступны в едином интерфейсе.",
+    workspaceTitle: "Рабочее пространство",
+    workspaceBody: "Текущее состояние интеграции и настройки аккаунта.",
+    sellerAccount: "Аккаунт продавца",
+    baseNetwork: "Основная сеть",
     apiStatus: "Статус API",
-    webhooksStatus: "Статус webhooks",
+    webhooksStatus: "Статус вебхуков",
     enabled: "Включено",
     disabled: "Выключено",
     signInRequiredTitle: "Нужна авторизация",
-    signInRequiredBody: "Документация доступна сразу, а менеджер ключей и webhooks открывается после входа в seller-аккаунт.",
-    upgradeRequiredTitle: "Нужен API-план",
-    upgradeRequiredBody: "Менеджер API-ключей, лимиты и webhooks доступны на Reqst Dev и Reqst Enterprise.",
-    webhooksUpgradeBody: "Webhooks активируются вместе с планом, который поддерживает событийную доставку.",
+    signInRequiredBody: "Документация открыта для всех, но управление ключами доступно только после входа.",
+    upgradeRequiredTitle: "Нужен API-тариф",
+    upgradeRequiredBody: "Управление API-ключами, лимиты и вебхуки доступны на тарифах Dev и Enterprise.",
+    webhooksUpgradeBody: "Вебхуки активируются вместе с планом, поддерживающим событийную доставку.",
     scopesTitle: "Права доступа",
-    scopeReadTitle: "Чтение инвойсов",
-    scopeReadBody: "GET /v1/me, GET /v1/invoices и GET /v1/invoices/:id.",
-    scopeWriteTitle: "Создание и отмена",
-    scopeWriteBody: "POST /v1/invoices и POST /v1/invoices/:id/cancel.",
+    scopeReadTitle: "Чтение данных",
+    scopeReadBody: "Доступ к методам GET /v1/me, /v1/invoices и /v1/invoices/:id.",
+    scopeWriteTitle: "Управление инвойсами",
+    scopeWriteBody: "Доступ к методам POST /v1/invoices и /v1/invoices/:id/cancel.",
     createdAt: "Создан",
     lastUsed: "Последнее использование",
     lastDelivery: "Последняя доставка",
-    lastSuccess: "Последний успех",
-    signingSecret: "Signing Secret",
-    openCheckout: "Открыть checkout",
+    lastSuccess: "Успешно доставлено",
+    signingSecret: "Секрет подписи",
+    openCheckout: "Открыть оплату",
     limitsTitle: "Лимиты и квоты",
-    limitsBody: "Живой срез нагрузки по аккаунту и what-to-watch перед production rollout.",
-    retryPolicy: "Повторы webhook",
-    monthWindow: "Окно месяца",
-    monthWindowBody: "Квота обнуляется первого числа каждого месяца по UTC.",
+    limitsBody: "Статистика нагрузки и важные показатели перед запуском в продакшн.",
+    retryPolicy: "Повторные попытки",
+    monthWindow: "Месячное окно",
+    monthWindowBody: "Квота обнуляется первого числа каждого месяца (UTC).",
     docsSteps: [
-      "Авторизуйтесь в seller-аккаунт и активируйте Reqst Dev или Reqst Enterprise.",
-      "Выпустите live API key и сохраните секрет на стороне backend.",
-      "Создайте инвойс через POST /v1/invoices и сохраните id/public_id.",
-      "Подключите webhook endpoint и валидируйте подпись перед обработкой события.",
+      "Авторизуйтесь в аккаунте продавца и активируйте тариф Dev или Enterprise.",
+      "Создайте API-ключ и сохраните его в конфигурации вашего бэкенда.",
+      "Создайте первый инвойс через POST /v1/invoices и сохраните его ID.",
+      "Добавьте Webhook-эндпоинт и настройте проверку подписи уведомлений.",
     ],
     docsChecklist: [
-      "Храните live-ключи только на сервере и не отдавайте их в браузер.",
-      "Возвращайте 2xx быстро, а тяжёлую обработку webhook переносите в очередь.",
-      "Проверяйте X-Reqst-Timestamp и X-Reqst-Signature до разбора JSON.",
-      "Мониторьте monthly cap и RPM, особенно перед batch-операциями.",
+      "Храните API-ключи только на сервере, никогда не передавайте их на фронтенд.",
+      "Отвечайте на вебхуки статусом 2xx быстро, вынося обработку в очередь.",
+      "Всегда проверяйте заголовки X-Reqst-Timestamp и X-Reqst-Signature.",
+      "Следите за лимитами RPM и месячной квотой, особенно при массовых операциях.",
     ],
     docsEvents: [
       {
         name: "invoice.paid",
-        body: "Инвойс подтвержден и может считаться успешной оплатой.",
+        body: "Инвойс полностью оплачен и подтвержден сетью.",
       },
       {
         name: "invoice.underpaid",
-        body: "Получена сумма ниже ожидаемой, нужен сценарий дозачисления или ручной разбор.",
+        body: "Сумма оплаты меньше ожидаемой. Требуется доплата или ручное вмешательство.",
       },
       {
         name: "invoice.manual_review",
-        body: "Платеж нельзя принять автоматически и он вынесен на ручную проверку.",
+        body: "Платеж требует ручного подтверждения оператором.",
       },
       {
         name: "invoice.expired",
-        body: "Инвойс истек или был завершен в статусе expired.",
+        body: "Срок оплаты инвойса истек.",
       },
       {
         name: "subscription.activated",
-        body: "Подписочный checkout успешно активировал платный план.",
+        body: "Подписка успешно активирована после оплаты.",
       },
     ],
   },
@@ -256,7 +271,7 @@ const COPY = {
     summaryTitle: "Access Status",
     summaryFallback: "API Disabled",
     plansTitle: "Plans",
-    plansBody: "Select your integration layer.",
+    plansBody: "Reqst Dev and Enterprise unlock API keys and webhook delivery.",
     plans: [
       {
         code: "dev",
@@ -277,20 +292,35 @@ const COPY = {
     securityBody: "API access keys.",
     deliveryTitle: "Events",
     deliveryBody: "Webhook endpoint management.",
-    sampleCardTitle: "Quick Start",
+    sampleCardTitle: "Invoice Payload",
     sampleCardBody: "API request example.",
-    docsTitle: "Documentation",
-    docsBody: "Full Seller API reference, webhook flow, and integration onboarding.",
+    docsTitle: "Reqst API",
+    docsBody: "Reference for Reqst API, API key issuance, and webhook delivery setup.",
     docsQuickstartTitle: "Getting Started",
     docsQuickstartBody: "The shortest path from account access to the first automated payment.",
     docsReferenceTitle: "Endpoint Reference",
-    docsReferenceBody: "Core methods available in Seller API v1.",
+    docsReferenceBody: "All public Reqst API v1 methods available via API key.",
     docsVerificationTitle: "Signature Verification",
     docsVerificationBody: "Reqst signs webhook payloads with HMAC SHA-256 using the timestamp.payload format.",
-    docsEventsTitle: "Events",
-    docsEventsBody: "Event types currently available for delivery.",
+    docsEventsTitle: "Webhook Events",
+    docsEventsBody: "Event types currently available for delivery to your endpoint.",
     docsChecklistTitle: "Production Checklist",
     docsChecklistBody: "A short pre-launch checklist for real traffic.",
+    docsApiCardTitle: "Reqst API v1",
+    docsApiCardBody: "Five current public methods for reading, creating, and canceling invoices.",
+    docsKeysCardTitle: "API Keys",
+    docsKeysCardBody: "Issuance, scopes, and rotation are managed lower on this page.",
+    docsHooksCardTitle: "Webhooks",
+    docsHooksCardBody: "Endpoint setup, signing secret, and delivery status live in a dedicated section below.",
+    docsStartColumnTitle: "Reqst API v1",
+    docsStartColumnBody: "The current public API surface: 5 methods and the core invoice flow.",
+    docsAsideColumnTitle: "Keys & Webhooks",
+    docsAsideColumnBody: "Access management and webhook delivery are configured on this same page, without a separate back office.",
+    docsAccessManagerTitle: "Access Manager",
+    docsAccessManagerBody: "API keys, webhook endpoints, and quota controls are configured in the sections below.",
+    docsAccessKeysCta: "Keys",
+    docsAccessHooksCta: "Webhooks",
+    docsAccessLimitsCta: "Limits",
     docsBaseUrl: "Base URL",
     docsAuthMode: "Authorization",
     docsScopes: "Scopes",
@@ -553,6 +583,12 @@ export function DeveloperPortalPage() {
     );
   }
 
+  function handlePlanCardSelect(planCode: "dev" | "enterprise") {
+    setBillingPlan(planCode);
+    setCheckoutUrl("");
+    document.getElementById("access")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   const developerApiBase = useMemo(() => {
     const base = getApiBase();
     const origin = window.location.origin.replace(/\/+$/, "");
@@ -591,14 +627,14 @@ export function DeveloperPortalPage() {
           path: "/v1/me",
           scope: "API key",
           title: "Проверка ключа",
-          body: "Возвращает seller, план, usage и scopes текущего ключа.",
+          body: "Возвращает аккаунт, план, usage и scopes текущего API-ключа.",
         },
         {
           method: "GET",
           path: "/v1/invoices?page=1&page_size=20",
           scope: "invoices:read",
           title: "Список инвойсов",
-          body: "Выдает paginated-список инвойсов, созданных вашим seller-аккаунтом.",
+          body: "Возвращает paginated-список инвойсов, созданных вашим аккаунтом.",
         },
         {
           method: "POST",
@@ -619,7 +655,7 @@ export function DeveloperPortalPage() {
           path: "/v1/invoices/:id/cancel",
           scope: "invoices:write",
           title: "Отменить инвойс",
-          body: "Завершает seller-managed invoice в статусе expired.",
+          body: "Переводит созданный вами инвойс в статус expired.",
         },
       ]
     : [
@@ -628,14 +664,14 @@ export function DeveloperPortalPage() {
           path: "/v1/me",
           scope: "API key",
           title: "Validate key",
-          body: "Returns the seller, current plan, usage, and active key scopes.",
+          body: "Returns the account, current plan, usage, and active key scopes.",
         },
         {
           method: "GET",
           path: "/v1/invoices?page=1&page_size=20",
           scope: "invoices:read",
           title: "List invoices",
-          body: "Returns a paginated list of invoices created under your seller account.",
+          body: "Returns a paginated list of invoices created under your account.",
         },
         {
           method: "POST",
@@ -656,7 +692,7 @@ export function DeveloperPortalPage() {
           path: "/v1/invoices/:id/cancel",
           scope: "invoices:write",
           title: "Cancel invoice",
-          body: "Transitions a seller-managed invoice into the expired state.",
+          body: "Transitions an invoice created by your account into the expired state.",
         },
       ];
 
@@ -861,25 +897,7 @@ export function DeveloperPortalPage() {
             </article>
 
             <article className="dev-portal__panel">
-              <span className="dev-portal__kicker">{text.plansTitle}</span>
-              <h3>{text.plansBody}</h3>
-              <div className="dev-portal__plan-grid">
-                {planCards.map((plan) => (
-                  <article
-                    key={plan.code}
-                    className={`dev-portal__plan-card ${selectedPlanCode === plan.code ? "is-selected" : ""}`}
-                  >
-                    <span>{plan.badge}</span>
-                    <strong>{plan.name}</strong>
-                    <p>{plan.body}</p>
-                  </article>
-                ))}
-              </div>
-            </article>
-
-            <article className="dev-portal__panel">
               <span className="dev-portal__kicker">{text.docsManagerTitle}</span>
-              <p className="page-copy-reset">{text.docsManagerBody}</p>
               <div className="dev-portal__sidebar-links">
                 <a href="#docs">{text.docsTitle}</a>
                 <a href="#access">{text.billingTitle}</a>
@@ -895,135 +913,83 @@ export function DeveloperPortalPage() {
               <div className="dev-portal__section-head">
                 <div>
                   <span className="dev-portal__kicker">{text.docsTitle}</span>
-                  <h2>{text.docsQuickstartTitle}</h2>
+                  <h2>{text.docsTitle}</h2>
                 </div>
-                <p>{text.docsBody}</p>
-              </div>
-
-              <div className="dev-portal__docs-grid">
-                <article className="dev-portal__subpanel">
-                  <span className="dev-portal__eyebrow">{text.docsQuickstartTitle}</span>
-                  <strong>{text.docsQuickstartBody}</strong>
-                  <ol className="dev-portal__steps">
-                    {text.docsSteps.map((step) => (
-                      <li key={step}>{step}</li>
-                    ))}
-                  </ol>
-                </article>
-
-                <article className="dev-portal__subpanel">
-                  <span className="dev-portal__eyebrow">{text.docsCodeLabel}</span>
-                  <strong>{developerApiBase}/invoices</strong>
-                  <div className="dev-portal__meta-row">
+                <div className="dev-portal__signal-grid" style={{ marginTop: "1rem" }}>
+                  <article className="dev-portal__signal-card">
                     <span>{text.docsBaseUrl}</span>
-                    <code>{developerApiBase}</code>
-                  </div>
-                  <div className="dev-portal__meta-row">
+                    <strong>{developerApiBase}</strong>
+                  </article>
+                  <article className="dev-portal__signal-card">
                     <span>{text.docsAuthMode}</span>
-                    <code>Authorization: Bearer rk_live_...</code>
-                  </div>
-                  <div className="dev-portal__code-wrap">
-                    <pre className="dev-portal__code-block"><code>{sampleCurl}</code></pre>
-                    <button type="button" className="dev-portal__small-button" onClick={() => void handleCopy(sampleCurl, "curl")}>
-                      {renderCopyLabel("curl")}
-                    </button>
-                  </div>
-                </article>
-              </div>
-
-              <div className="dev-portal__docs-grid">
-                <article className="dev-portal__subpanel">
-                  <span className="dev-portal__eyebrow">{text.docsReferenceTitle}</span>
-                  <strong>{text.docsReferenceBody}</strong>
-                  <div className="dev-portal__endpoint-grid">
-                    {endpointDocs.map((endpoint) => (
-                      <article key={`${endpoint.method}-${endpoint.path}`} className="dev-portal__endpoint-card">
-                        <div className="dev-portal__endpoint-head">
-                          <span className={`dev-portal__method dev-portal__method--${endpoint.method.toLowerCase()}`}>
-                            {endpoint.method}
-                          </span>
-                          <code>{endpoint.path}</code>
-                        </div>
-                        <strong>{endpoint.title}</strong>
-                        <p>{endpoint.body}</p>
-                        <small>{endpoint.scope}</small>
-                      </article>
-                    ))}
-                  </div>
-                </article>
-
-                <article className="dev-portal__subpanel">
-                  <span className="dev-portal__eyebrow">{text.docsResponseTitle}</span>
-                  <strong>{text.sampleCardTitle}</strong>
-                  <div className="dev-portal__code-wrap">
-                    <pre className="dev-portal__code-block"><code>{sampleResponse}</code></pre>
-                    <button
-                      type="button"
-                      className="dev-portal__small-button"
-                      onClick={() => void handleCopy(sampleResponse, "response")}
-                    >
-                      {renderCopyLabel("response")}
-                    </button>
-                  </div>
-                </article>
-              </div>
-
-              <div className="dev-portal__docs-grid">
-                <article className="dev-portal__subpanel">
-                  <span className="dev-portal__eyebrow">{text.docsVerificationTitle}</span>
-                  <strong>{text.docsVerificationBody}</strong>
-                  <div className="dev-portal__meta-stack">
-                    <div className="dev-portal__meta-row">
-                      <span>X-Reqst-Event</span>
-                      <code>invoice.paid</code>
-                    </div>
-                    <div className="dev-portal__meta-row">
-                      <span>X-Reqst-Timestamp</span>
-                      <code>unix seconds</code>
-                    </div>
-                    <div className="dev-portal__meta-row">
-                      <span>X-Reqst-Signature</span>
-                      <code>v1=hex(hmac_sha256(secret, timestamp.payload))</code>
-                    </div>
-                  </div>
-                  <div className="dev-portal__code-wrap">
-                    <pre className="dev-portal__code-block"><code>{verifyWebhookSnippet}</code></pre>
-                    <button
-                      type="button"
-                      className="dev-portal__small-button"
-                      onClick={() => void handleCopy(verifyWebhookSnippet, "verify")}
-                    >
-                      {renderCopyLabel("verify")}
-                    </button>
-                  </div>
-                </article>
-
-                <article className="dev-portal__subpanel">
-                  <span className="dev-portal__eyebrow">{text.docsEventsTitle}</span>
-                  <strong>{text.docsEventsBody}</strong>
-                  <div className="dev-portal__event-list">
-                    {text.docsEvents.map((eventItem) => (
-                      <article key={eventItem.name} className="dev-portal__event-item">
-                        <code>{eventItem.name}</code>
-                        <p>{eventItem.body}</p>
-                      </article>
-                    ))}
-                  </div>
-                </article>
-              </div>
-
-              <article className="dev-portal__subpanel">
-                <span className="dev-portal__eyebrow">{text.docsChecklistTitle}</span>
-                <strong>{text.docsChecklistBody}</strong>
-                <div className="dev-portal__checklist">
-                  {text.docsChecklist.map((item) => (
-                    <div key={item} className="dev-portal__checklist-item">
-                      <span />
-                      <p>{item}</p>
-                    </div>
-                  ))}
+                    <strong>Bearer [API_KEY]</strong>
+                  </article>
                 </div>
-              </article>
+              </div>
+
+              <div className="dev-portal__docs-columns">
+                <div className="dev-portal__docs-stack">
+                  <article className="dev-portal__subpanel">
+                    <span className="dev-portal__eyebrow">{text.docsReferenceTitle}</span>
+                    <strong>{text.docsReferenceBody}</strong>
+                    <div className="dev-portal__endpoint-grid">
+                      {endpointDocs.map((endpoint) => (
+                        <article key={`${endpoint.method}-${endpoint.path}`} className="dev-portal__endpoint-card">
+                          <div className="dev-portal__endpoint-head">
+                            <span className={`dev-portal__method dev-portal__method--${endpoint.method.toLowerCase()}`}>
+                              {endpoint.method}
+                            </span>
+                            <code>{endpoint.path}</code>
+                          </div>
+                          <strong>{endpoint.title}</strong>
+                          <p>{endpoint.body}</p>
+                        </article>
+                      ))}
+                    </div>
+                  </article>
+
+                  <article className="dev-portal__subpanel dev-portal__subpanel--code">
+                    <span className="dev-portal__eyebrow">{text.docsCodeLabel}</span>
+                    <strong>POST /v1/invoices</strong>
+                    <div className="dev-portal__code-wrap">
+                      <pre className="dev-portal__code-block"><code>{sampleCurl}</code></pre>
+                      <button type="button" className="dev-portal__small-button" onClick={() => void handleCopy(sampleCurl, "curl")}>
+                        {renderCopyLabel("curl")}
+                      </button>
+                    </div>
+                  </article>
+                </div>
+
+                <div className="dev-portal__docs-stack dev-portal__docs-stack--aside">
+                  <article className="dev-portal__subpanel dev-portal__subpanel--code">
+                    <span className="dev-portal__eyebrow">{text.docsVerificationTitle}</span>
+                    <strong>HMAC SHA-256</strong>
+                    <div className="dev-portal__code-wrap">
+                      <pre className="dev-portal__code-block"><code>{verifyWebhookSnippet}</code></pre>
+                      <button
+                        type="button"
+                        className="dev-portal__small-button"
+                        onClick={() => void handleCopy(verifyWebhookSnippet, "verify")}
+                      >
+                        {renderCopyLabel("verify")}
+                      </button>
+                    </div>
+                  </article>
+
+                  <article className="dev-portal__subpanel">
+                    <span className="dev-portal__eyebrow">{text.docsEventsTitle}</span>
+                    <strong>{text.docsEventsBody}</strong>
+                    <div className="dev-portal__event-list">
+                      {text.docsEvents.map((eventItem) => (
+                        <article key={eventItem.name} className="dev-portal__event-item">
+                          <code>{eventItem.name}</code>
+                          <p>{eventItem.body}</p>
+                        </article>
+                      ))}
+                    </div>
+                  </article>
+                </div>
+              </div>
             </section>
 
             <section className="dev-portal__panel" id="access">
