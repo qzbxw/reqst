@@ -315,6 +315,14 @@ export function CheckoutPage() {
     return `${minutes}:${seconds}`;
   }, [invoice, now, text.expired]);
 
+  useEffect(() => {
+    document.title = invoice?.title?.trim()
+      ? `Reqst | ${invoice.title.trim()}`
+      : language === "ru"
+        ? "Reqst | Оплата"
+        : "Reqst | Checkout";
+  }, [invoice?.title, language]);
+
   const title = invoice?.title?.trim() || text.paymentRequest;
   const checkoutBadge = invoice?.checkout_badge || (invoice?.kind === "subscription" ? "Reqst Billing" : text.paymentRequest);
   const checkoutVariant = invoice?.plan_code && invoice.plan_code !== "trial" ? invoice.plan_code : "merchant";

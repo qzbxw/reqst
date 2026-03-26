@@ -441,7 +441,7 @@ export function LegalPage({ variant }: { variant: LegalVariant }) {
                 {section.paragraphs.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}
-                {"bullets" in section ? (
+                {section.bullets ? (
                   <ul className="legal-bullet-list">
                     {section.bullets.map((item) => (
                       <li key={item}>{item}</li>
