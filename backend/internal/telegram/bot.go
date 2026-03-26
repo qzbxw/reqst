@@ -895,13 +895,13 @@ func networkButtonLabel(network store.Network) string {
 	case store.NetworkTRON:
 		return "TRON / USDT"
 	case store.NetworkSOLANA:
-		return "SOLANA / USDC"
+		return "SOLANA / USDT"
 	case store.NetworkEVM:
-		return "EVM / USDC"
+		return "EVM / USDT"
 	case store.NetworkBASE:
-		return "BASE / USDC"
+		return "BASE / USDT"
 	case store.NetworkARBITRUM:
-		return "ARBITRUM / USDC"
+		return "ARBITRUM / USDT"
 	case store.NetworkBSC:
 		return "BSC / USDT"
 	default:

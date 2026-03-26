@@ -20,11 +20,11 @@ import (
 
 func TestStablecoinForNetwork(t *testing.T) {
 	cases := map[store.Network]string{
-		store.NetworkEVM:      "USDC",
-		store.NetworkBASE:     "USDC",
-		store.NetworkARBITRUM: "USDC",
+		store.NetworkEVM:      "USDT",
+		store.NetworkBASE:     "USDT",
+		store.NetworkARBITRUM: "USDT",
 		store.NetworkBSC:      "USDT",
-		store.NetworkSOLANA:   "USDC",
+		store.NetworkSOLANA:   "USDT",
 	}
 	for network, symbol := range cases {
 		spec := stablecoinForNetwork(network)
@@ -91,7 +91,7 @@ func TestPollEVMStablecoin(t *testing.T) {
 				"id":      1,
 				"result": []map[string]any{
 					{
-						"address":         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+						"address":         "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2",
 						"topics":          []string{erc20TransferTopic},
 						"data":            "0xf4240",
 						"blockNumber":     "0x64",

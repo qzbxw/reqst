@@ -83,7 +83,7 @@ func TestBotWorkerHelpers(t *testing.T) {
 	if networks := payableNetworksForWallet(store.NetworkEVM); len(networks) != 4 {
 		t.Fatalf("expected 4 payable networks for EVM wallet, got %#v", networks)
 	}
-	if got := networkButtonLabel(store.NetworkBASE); got != "BASE / USDC" {
+	if got := networkButtonLabel(store.NetworkBASE); got != "BASE / USDT" {
 		t.Fatalf("unexpected network label: %q", got)
 	}
 }
