@@ -68,6 +68,14 @@ services:
     ports:
       - "${BOT_METRICS_PORT:-9092}:9092"
 
+  frontend_public:
+    build:
+      context: .
+      dockerfile: frontend-public/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+
   frontend:
     build:
       context: .
@@ -77,7 +85,9 @@ services:
     restart: unless-stopped
     depends_on:
       - api
+      - frontend_public
     ports:
+      - "3000:80"
       - "5173:80"
 
 volumes:

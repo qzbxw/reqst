@@ -41,6 +41,8 @@ const COPY = {
     networkOnly: "Только эта сеть",
     paidTitle: "Оплачено",
     paidBody: "Ваш платеж успешно подтвержден.",
+    underpaidBody: "Получена меньшая сумма. Продавец проверит платеж или дождется доплаты.",
+    manualReviewBody: "Платеж требует ручной проверки продавцом. Не отправляйте повторный платеж без подтверждения.",
     expiredTitle: "Срок оплаты истек",
     expiredBody: "Время на оплату вышло. Пожалуйста, не отправляйте средства по этим реквизитам.",
     paymentDetails: "Реквизиты",
@@ -84,6 +86,8 @@ const COPY = {
     networkOnly: "Network only",
     paidTitle: "Paid",
     paidBody: "Your payment has been successfully confirmed.",
+    underpaidBody: "A smaller amount was received. The merchant will review the payment or wait for a top-up.",
+    manualReviewBody: "This payment needs merchant review. Do not send another payment unless the merchant confirms it.",
     expiredTitle: "Session Expired",
     expiredBody: "The payment window has closed. Please do not send any funds to this address.",
     paymentDetails: "Details",
@@ -330,6 +334,9 @@ export function CheckoutPage() {
   const expiresDiff = invoice ? new Date(invoice.expires_at).getTime() - now : 0;
   const isExpired = invoice ? expiresDiff <= 0 || invoice.status === "expired" : false;
   const isPaid = invoice?.status === "paid";
+  const isUnderpaid = invoice?.status === "underpaid";
+  const isManualReview = invoice?.status === "manual_review";
+  const isFinalState = isPaid || isExpired || isUnderpaid || isManualReview;
   const isExpiringSoon = !isExpired && !isPaid && expiresDiff > 0 && expiresDiff <= 5 * 60 * 1000;
   const paymentRows = invoice
     ? [
@@ -403,7 +410,7 @@ export function CheckoutPage() {
                     <div className={`receipt-warning-callout ${isPaid ? "is-success" : isExpired ? "is-error" : ""}`}>
                       {isPaid ? <Icons.Check /> : isExpired ? <Icons.Alert /> : <Icons.Alert />}
                       <p className="hero-copy">
-                        {isPaid ? text.paidBody : isExpired ? text.expiredBody : text.warning}
+                        {isPaid ? text.paidBody : isExpired ? text.expiredBody : isUnderpaid ? text.underpaidBody : isManualReview ? text.manualReviewBody : text.warning}
                       </p>
                     </div>
 
@@ -420,7 +427,7 @@ export function CheckoutPage() {
                   </div>
                 </div>
 
-                <section className={`payment-sheet payment-sheet--receipt ${isPaid || isExpired ? "is-disabled" : ""}`}>
+                <section className={`payment-sheet payment-sheet--receipt ${isFinalState ? "is-disabled" : ""}`}>
                   <div className="payment-sheet-header">
                     <span className="payment-sheet-kicker">{text.paymentDetails}</span>
                   </div>
@@ -435,7 +442,7 @@ export function CheckoutPage() {
                             </div>
                             <p>{text.payloadHint}</p>
                           </div>
-                          {!isPaid && !isExpired && (
+                          {!isFinalState && (
                             <button type="button" className={`field-copy field-copy--named ${copiedField === "comment" ? "is-copied" : ""}`} onClick={() => void copyValue("comment", invoice.payment_comment ?? "")} aria-label={text.copyComment}>
                               <Icons.Copy />
                               {copiedField === "comment" ? text.copied : text.copyComment}
@@ -454,13 +461,13 @@ export function CheckoutPage() {
                     {paymentRows
                       .filter((row) => row.key !== "amount")
                       .map((row) => (
-                        <div key={row.key} className={`payment-field ${!isPaid && !isExpired ? "payment-field--button" : ""}`} onClick={() => !isPaid && !isExpired && void copyValue(row.key, row.value)}>
+                        <div key={row.key} className={`payment-field ${!isFinalState ? "payment-field--button" : ""}`} onClick={() => !isFinalState && void copyValue(row.key, row.value)}>
                           <div>
                             <label>{row.label}</label>
                             <code>{row.value}</code>
                             <small>{row.secondary}</small>
                           </div>
-                          {!isPaid && !isExpired && (
+                          {!isFinalState && (
                             <span className="field-copy field-copy--named" aria-label={row.copyLabel}>
                               <Icons.Copy />
                               {copiedField === row.key ? text.copied : row.copyLabel}
@@ -480,7 +487,7 @@ export function CheckoutPage() {
                     <b>{formatNetworkLabel(invoice.payable_network)}</b>
                     <small>{text.networkOnly}</small>
                   </div>
-                  {!isPaid && !isExpired && (
+                  {!isFinalState && (
                     <button type="button" className={`ghost-button compact-button payment-rail-action ${copiedField === "amount" ? "is-copied" : ""}`} onClick={() => void copyValue("amount", invoice.payable_amount)}>
                       <Icons.Copy />
                       {copiedField === "amount" ? text.copied : text.copyAmount}
@@ -494,7 +501,7 @@ export function CheckoutPage() {
                       {qrDataUrl ? <img className="qr-image qr-image--lux" src={qrDataUrl} alt="Invoice QR" /> : <p className="muted">{text.qrLoading}</p>}
                     </div>
                   </div>
-                  {!isPaid && !isExpired && <p className="qr-caption">{text.scanHint}</p>}
+                  {!isFinalState && <p className="qr-caption">{text.scanHint}</p>}
                 </aside>
               </aside>
             </div>

@@ -17,6 +17,12 @@ import (
 	"reqst/backend/internal/store"
 )
 
+// @title           Reqst API
+// @version         1.0
+// @description     Reqst Payment API
+// @host            localhost:8080
+// @BasePath        /v1
+
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()

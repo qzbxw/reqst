@@ -27,7 +27,7 @@ const COPY = {
       priceLabel: "199$",
       period: "в месяц",
       stats: [
-        { value: "0ms", label: "Латентность" },
+        { value: "Confirmed", label: "Финальность" },
         { value: "100%", label: "Direct-to-Wallet" },
         { value: "Full", label: "Real-time Access" },
         { value: "∞", label: "Webhook Endpoints" },
@@ -39,11 +39,11 @@ const COPY = {
         },
         {
           title: "Real-time Monitoring",
-          body: "Мониторинг транзакций в реальном времени. Обнаружение платежа происходит мгновенно, еще до подтверждения блоком.",
+          body: "Мониторинг транзакций в реальном времени. Обнаружение платежа учитывает сетевые подтверждения и политику финальности.",
         },
         {
           title: "Unified API v1 Beta",
-          body: "Единый интерфейс для работы с 7+ сетями: TON, TRON, SOL, Base, Arbitrum, BSC и Ethereum (EVM).",
+          body: "Единый интерфейс для работы с поддерживаемыми сетями: TON, TRON, SOL, Base, Arbitrum, BSC и Ethereum (EVM).",
         },
         {
           title: "Idempotency Safety",
@@ -80,7 +80,7 @@ console.log("Checkout URL:", invoice.checkout_url);`
       priceLabel: "Custom",
       period: "индивидуальный расчет",
       stats: [
-        { value: "0ms", label: "Латентность" },
+        { value: "Confirmed", label: "Финальность" },
         { value: "Full", label: "Real-time Access" },
         { value: "∞", label: "Webhook Endpoints" },
         { value: "24/7", label: "Support" },
@@ -117,7 +117,7 @@ function verify(payload, signature, secret) {
   return \`v1=\${hmac.digest('hex')}\` === signature;
 }
 
-// 100% authenticity for mission-critical payments`
+// Signed event verification for payment webhooks`
     },
   },
   en: {
@@ -142,7 +142,7 @@ function verify(payload, signature, secret) {
       priceLabel: "$199",
       period: "per month",
       stats: [
-        { value: "0ms", label: "Latency" },
+        { value: "Confirmed", label: "Finality" },
         { value: "100%", label: "Direct-to-Wallet" },
         { value: "Full", label: "Real-time Access" },
         { value: "∞", label: "Webhook Endpoints" },
@@ -154,11 +154,11 @@ function verify(payload, signature, secret) {
         },
         {
           title: "Real-time Monitoring",
-          body: "Real-time transaction monitoring. Detect incoming payments instantly, even before block confirmation.",
+          body: "Real-time transaction monitoring. Detect incoming payments using network confirmations and finality policy.",
         },
         {
           title: "Unified API v1 Beta",
-          body: "A single interface for 7+ networks including TON, TRON, SOL, Base, Arbitrum, BSC, and Ethereum.",
+          body: "A single interface for supported networks including TON, TRON, SOL, Base, Arbitrum, BSC, and Ethereum.",
         },
         {
           title: "Idempotency Safety",
@@ -195,7 +195,7 @@ console.log("Checkout URL:", invoice.checkout_url);`
       priceLabel: "Custom",
       period: "individual pricing",
       stats: [
-        { value: "0ms", label: "Latency" },
+        { value: "Confirmed", label: "Finality" },
         { value: "Full", label: "Real-time Access" },
         { value: "∞", label: "Webhook Endpoints" },
         { value: "24/7", label: "Support" },
@@ -232,7 +232,7 @@ function verify(payload, signature, secret) {
   return \`v1=\${hmac.digest('hex')}\` === signature;
 }
 
-// 100% authenticity for mission-critical payments`
+// Signed event verification for payment webhooks`
     },
   },
 } as const;

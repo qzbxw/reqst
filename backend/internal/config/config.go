@@ -8,32 +8,35 @@ import (
 )
 
 type Config struct {
-	AppEnv               string
-	AppRuntime           string
-	HTTPPort             string
-	MetricsPort          string
-	DatabaseURL          string
-	JWTSecret            string
-	InternalToken        string
-	TelegramBotToken     string
-	TelegramInitMaxAge   time.Duration
-	AllowInsecureDevAuth bool
-	PublicAppURL         string
-	WatcherPollInterval  time.Duration
-	TronGridBaseURL      string
-	TronGridAPIKey       string
-	TonCenterBaseURL     string
-	TonCenterAPIKey      string
-	TonUSDOverride       string
-	SolanaRPCURL         string
-	EthereumRPCURL       string
-	BaseRPCURL           string
-	ArbitrumRPCURL       string
-	BSCRPCURL            string
-	AdminUsername        string
-	AdminPassword        string
-	AdminJWTSecret       string
-	AdminSessionTTL      time.Duration
+	AppEnv                string
+	AppRuntime            string
+	HTTPPort              string
+	MetricsPort           string
+	DatabaseURL           string
+	JWTSecret             string
+	InternalToken         string
+	TelegramBotToken      string
+	TelegramInitMaxAge    time.Duration
+	AllowInsecureDevAuth  bool
+	PublicAppURL          string
+	WatcherPollInterval   time.Duration
+	WatcherGraceWindow    time.Duration
+	WatcherBackfillBlocks int64
+	EVMConfirmationDepth  int64
+	TronGridBaseURL       string
+	TronGridAPIKey        string
+	TonCenterBaseURL      string
+	TonCenterAPIKey       string
+	TonUSDOverride        string
+	SolanaRPCURL          string
+	EthereumRPCURL        string
+	BaseRPCURL            string
+	ArbitrumRPCURL        string
+	BSCRPCURL             string
+	AdminUsername         string
+	AdminPassword         string
+	AdminJWTSecret        string
+	AdminSessionTTL       time.Duration
 }
 
 func Load() (Config, error) {
@@ -78,6 +81,13 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("WATCHER_POLL_INTERVAL: %w", err)
 	}
 	cfg.WatcherPollInterval = pollInterval
+	graceWindow, err := time.ParseDuration(envOrDefault("WATCHER_GRACE_WINDOW", "24h"))
+	if err != nil {
+		return Config{}, fmt.Errorf("WATCHER_GRACE_WINDOW: %w", err)
+	}
+	cfg.WatcherGraceWindow = graceWindow
+	cfg.WatcherBackfillBlocks = int64Env("WATCHER_BACKFILL_BLOCKS", 2500)
+	cfg.EVMConfirmationDepth = int64Env("EVM_CONFIRMATION_DEPTH", 12)
 
 	adminSessionTTL, err := time.ParseDuration(envOrDefault("ADMIN_SESSION_TTL", "12h"))
 	if err != nil {
@@ -126,6 +136,19 @@ func intEnv(name string, fallback int) int {
 	}
 
 	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
+}
+
+func int64Env(name string, fallback int64) int64 {
+	value := os.Getenv(name)
+	if value == "" {
+		return fallback
+	}
+
+	parsed, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
 		return fallback
 	}

@@ -292,7 +292,6 @@ const WALLET_NETWORK_OPTIONS: Array<{ value: Network; label: string }> = [
 
 const PAYABLE_NETWORK_OPTIONS: Array<{ value: Network; label: string }> = [
   { value: "TON", label: "TON" },
-  { value: "TON_USDT", label: "TON USDT" },
   { value: "TRON", label: "TRON" },
   { value: "SOLANA", label: "SOLANA" },
   { value: "BASE", label: "BASE" },
@@ -978,5 +977,4 @@ const NETWORK_OPTIONS: Array<{ value: Network; label: string }> = [
   { value: "BSC", label: "BSC" },
   { value: "EVM", label: "ETH" },
   { value: "TON", label: "TON" },
-  { value: "TON_USDT", label: "TON USDT" },
 ];

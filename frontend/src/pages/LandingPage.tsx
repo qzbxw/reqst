@@ -142,16 +142,16 @@ const COPY = {
       title: "Создано для себя. Масштабировано для вас.",
       cards: [
         {
-          title: "100% Нагрузки",
-          body: "Каждый цент, заработанный Reqst, проходит через этот же движок. Мы не используем сторонние шлюзы."
+          title: "Рабочая нагрузка",
+          body: "Reqst обрабатывает собственные платежи через тот же движок, который доступен мерчантам."
         },
         {
           title: "Главный мерчант",
-          body: "Мы — свой самый требовательный клиент. Если функция не идеальна для нас, она не попадет к вам."
+          body: "Мы используем продукт сами перед тем, как открывать новые платежные функции мерчантам."
         },
         {
           title: "Инженерная точность",
-          body: "Мы отшлифовали логику на тысячах собственных транзакций, предусмотрев любые аномалии в сетях еще до публичного запуска."
+          body: "Логика оптимизирована на внутренней истории транзакций и покрывает типовые edge cases через понятные статусы проверки."
         }
       ]
     },
@@ -337,12 +337,12 @@ const COPY = {
         {
           name: "SOL",
           title: "Solana",
-          body: "Unrivaled speed and efficiency for businesses that can't afford to wait.",
+          body: "Fast, confirmation-aware monitoring for businesses that need predictable payment operations.",
         },
         {
           name: "EVM",
           title: "EVM & L2",
-          body: "Base, Arbitrum, BSC — capture liquidity across any popular blockchain.",
+          body: "Base, Arbitrum, BSC — support the EVM networks available in the current checkout flow.",
         },
       ],
       soon: {
@@ -357,16 +357,16 @@ const COPY = {
       title: "Built for Us. Scaled for You.",
       cards: [
         {
-          title: "100% Load",
-          body: "Every cent earned by Reqst flows through this exact engine. We don’t use third-party gateways."
+          title: "Production Load",
+          body: "Reqst processes its own payments through the same engine exposed to merchants."
         },
         {
           title: "Anchor Merchant",
-          body: "We are our own most demanding customer. If a feature isn’t perfect for us, it doesn't reach you."
+          body: "We use the product ourselves before exposing new payment features to merchants."
         },
         {
           title: "Hardened Logic",
-          body: "Optimized through thousands of internal transactions to handle every complex blockchain edge case with precision."
+          body: "Optimized through internal transaction history to handle common blockchain edge cases with clearer review states."
         }
       ]
     },

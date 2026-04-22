@@ -1,0 +1,53 @@
+basePath: /v1
+host: localhost:8080
+info:
+  contact: {}
+  description: Reqst Payment API
+  title: Reqst API
+  version: "1.0"
+paths:
+  /invoices:
+    get:
+      description: List merchant and subscription invoices with pagination. Requires
+        invoices:read scope.
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20, max 100)
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List invoices
+      tags:
+      - invoices
+  /invoices/{id}/cancel:
+    post:
+      description: Cancel an awaiting_payment invoice. Requires invoices:write scope.
+      parameters:
+      - description: Invoice ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Cancel an invoice
+      tags:
+      - invoices
+swagger: "2.0"

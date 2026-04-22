@@ -5,13 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/prerender-public.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@uiw/react-md-editor": "^4.1.0",
+    "next-mdx-remote": "^6.0.0",
     "qrcode": "^1.5.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.7.1"
   },
   "devDependencies": {

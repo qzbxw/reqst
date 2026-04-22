@@ -37,6 +37,7 @@ export type Invoice = {
   destination_address: string;
   payment_comment: string | null;
   status: string;
+  mode?: "live" | "test";
   expires_at: string;
   created_at: string;
   tx_hash?: string | null;
@@ -101,9 +102,30 @@ export type APIKey = {
   seller_id: number;
   label: string;
   prefix: string;
+  mode: "live" | "test";
   scopes: string[];
   last_used_at: string | null;
   created_at: string;
+};
+
+export type WebhookDelivery = {
+  id: number;
+  event_id: string;
+  endpoint_id: number;
+  seller_id: number;
+  event_type: string;
+  payload: unknown;
+  status: string;
+  attempts: number;
+  max_attempts: number;
+  last_http_status: number | null;
+  last_error: string | null;
+  created_at: string;
+  sent_at: string | null;
+};
+
+export type WebhookDeliveryListResponse = {
+  items: WebhookDelivery[] | null;
 };
 
 export type WebhookEndpoint = {
@@ -231,4 +253,21 @@ export type AdminBillingCheckoutResponse = {
     generated_at: string;
   };
   invoice: Invoice;
+};
+
+export type AdminBlogPost = {
+  id: number;
+  slug: string;
+  title: string;
+  content_md: string;
+  excerpt: string;
+  cover_image_url: string;
+  author: string;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminBlogPostListResponse = {
+  items: AdminBlogPost[];
 };

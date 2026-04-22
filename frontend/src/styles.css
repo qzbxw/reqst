@@ -630,6 +630,75 @@
   }
 }
 
+.docs-page .lend-shell {
+  max-width: 1120px;
+}
+
+.docs-hero {
+  padding: 7rem 0 3rem;
+  max-width: 760px;
+}
+
+.docs-hero h1 {
+  font-size: clamp(3rem, 7vw, 6rem);
+  margin: 0.5rem 0 1rem;
+}
+
+.docs-hero p {
+  color: var(--muted);
+  font-size: 1.15rem;
+  line-height: 1.7;
+}
+
+.docs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  padding-bottom: 5rem;
+}
+
+.docs-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.docs-card h2 {
+  font-size: 1.2rem;
+  margin: 0 0 0.75rem;
+}
+
+.docs-card p {
+  color: var(--muted);
+  line-height: 1.65;
+  margin: 0;
+}
+
+.docs-card pre {
+  overflow-x: auto;
+  margin: 1rem 0 0;
+  padding: 1rem;
+  border-radius: 8px;
+  background: #050505;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.docs-card code {
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .docs-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .docs-hero {
+    padding-top: 4rem;
+  }
+}
+
 /* Billing specific */
 .dev-billing-card {
   display: grid;

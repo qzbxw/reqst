@@ -3,6 +3,7 @@ package watcher
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -117,6 +118,7 @@ func (w *Watcher) pollTRC20(ctx context.Context, wallet store.WatchedWallet) ([]
 	base := strings.TrimRight(w.cfg.TronGridBaseURL, "/")
 	query := url.Values{}
 	query.Set("only_to", "true")
+	query.Set("only_confirmed", "true")
 	query.Set("limit", "50")
 
 	endpoint := fmt.Sprintf("%s/v1/accounts/%s/transactions/trc20?%s", base, wallet.Address, query.Encode())
@@ -186,6 +188,7 @@ func (w *Watcher) pollTRC20(ctx context.Context, wallet store.WatchedWallet) ([]
 		}
 		transfers = append(transfers, transfer)
 	}
+	transfers = w.filterTransfersAfterCheckpoint(ctx, wallet, transfers, 0)
 	metrics.ObserveUpstream("trongrid", "poll_trc20", "success", time.Since(startedAt))
 	return transfers, nil
 }
@@ -256,6 +259,7 @@ func (w *Watcher) pollTON(ctx context.Context, wallet store.WatchedWallet) ([]st
 		}
 		transfers = append(transfers, transfer)
 	}
+	transfers = w.filterTransfersAfterCheckpoint(ctx, wallet, transfers, 0)
 	metrics.ObserveUpstream("toncenter", "poll_ton", "success", time.Since(startedAt))
 	return transfers, nil
 }
@@ -290,13 +294,13 @@ func (w *Watcher) pollTON_USDT(ctx context.Context, wallet store.WatchedWallet) 
 	var payload struct {
 		OK     bool `json:"ok"`
 		Result []struct {
-			UTime        int64  `json:"utime"`
+			UTime           int64  `json:"utime"`
 			TransactionHash string `json:"transaction_hash"`
-			Source       string `json:"source"`
-			Destination  string `json:"destination"`
-			Amount       string `json:"amount"`
-			JettonMaster string `json:"jetton_master"`
-			QueryID      int64  `json:"query_id"`
+			Source          string `json:"source"`
+			Destination     string `json:"destination"`
+			Amount          string `json:"amount"`
+			JettonMaster    string `json:"jetton_master"`
+			QueryID         int64  `json:"query_id"`
 		} `json:"result"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
@@ -332,8 +336,46 @@ func (w *Watcher) pollTON_USDT(ctx context.Context, wallet store.WatchedWallet) 
 		}
 		transfers = append(transfers, transfer)
 	}
+	transfers = w.filterTransfersAfterCheckpoint(ctx, wallet, transfers, 0)
 	metrics.ObserveUpstream("toncenter", "poll_ton_usdt", "success", time.Since(startedAt))
 	return transfers, nil
+}
+
+func (w *Watcher) filterTransfersAfterCheckpoint(ctx context.Context, wallet store.WatchedWallet, transfers []store.ObservedTransfer, lastBlock int64) []store.ObservedTransfer {
+	checkpoint, err := w.store.GetWatcherCheckpoint(ctx, wallet.PollNetwork, wallet.PayableNetwork, wallet.Address)
+	if err != nil && !errors.Is(err, store.ErrNotFound) {
+		w.logger.Warn("load watcher checkpoint failed", "network", wallet.PayableNetwork, "address", wallet.Address, "error", err)
+		return transfers
+	}
+
+	filtered := transfers
+	var maxObserved *time.Time
+	if checkpoint.LastObservedAt != nil {
+		filtered = make([]store.ObservedTransfer, 0, len(transfers))
+		for _, transfer := range transfers {
+			if transfer.ObservedAt.After(*checkpoint.LastObservedAt) {
+				filtered = append(filtered, transfer)
+			}
+		}
+	}
+	for _, transfer := range transfers {
+		observed := transfer.ObservedAt
+		if maxObserved == nil || observed.After(*maxObserved) {
+			maxObserved = &observed
+		}
+	}
+	if maxObserved != nil || lastBlock > 0 {
+		if err := w.store.SaveWatcherCheckpoint(ctx, store.WatcherCheckpoint{
+			PollNetwork:        wallet.PollNetwork,
+			PayableNetwork:     wallet.PayableNetwork,
+			DestinationAddress: wallet.Address,
+			LastBlock:          lastBlock,
+			LastObservedAt:     maxObserved,
+		}); err != nil {
+			w.logger.Warn("save watcher checkpoint failed", "network", wallet.PayableNetwork, "address", wallet.Address, "error", err)
+		}
+	}
+	return filtered
 }
 
 func parseTronTimestamp(value any) time.Time {

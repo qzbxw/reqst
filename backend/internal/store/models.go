@@ -46,7 +46,7 @@ func (n Network) IsSupportedWalletNetwork() bool {
 
 func (n Network) IsSupportedPayableNetwork() bool {
 	switch n {
-	case NetworkTON, NetworkTON_USDT, NetworkTRON, NetworkSOLANA, NetworkEVM, NetworkBASE, NetworkARBITRUM, NetworkBSC:
+	case NetworkTON, NetworkTRON, NetworkSOLANA, NetworkEVM, NetworkBASE, NetworkARBITRUM, NetworkBSC:
 		return true
 	default:
 		return false
@@ -143,6 +143,7 @@ type Invoice struct {
 	ExpiresAt          time.Time        `json:"expires_at"`
 	TxHash             *string          `json:"tx_hash"`
 	PaidAt             *time.Time       `json:"paid_at"`
+	Mode               string           `json:"mode"`
 	CreatedAt          time.Time        `json:"created_at"`
 }
 
@@ -187,4 +188,18 @@ type NotificationJob struct {
 	Message             string
 	Payload             json.RawMessage
 	Attempts            int
+}
+
+type BlogPost struct {
+	ID            int64      `json:"id"`
+	Slug          string     `json:"slug"`
+	Title         string     `json:"title"`
+	ContentMD     string     `json:"content_md"`
+	Excerpt       *string    `json:"excerpt"`
+	CoverImageURL *string    `json:"cover_image_url"`
+	Author        *string    `json:"author"`
+	IsPublished   bool       `json:"is_published"`
+	PublishedAt   *time.Time `json:"published_at"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
 }

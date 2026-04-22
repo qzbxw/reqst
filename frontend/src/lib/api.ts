@@ -10,7 +10,9 @@ import type {
   MeResponse,
   Wallet,
   WalletListResponse,
+  WebhookDelivery,
   WebhookEndpoint,
+  WebhookDeliveryListResponse,
   WebhookListResponse,
 } from "./types";
 
@@ -157,6 +159,13 @@ export async function createAPIKey(token: string, payload: { label: string; scop
   }, token);
 }
 
+export async function createTestAPIKey(token: string, payload: { label: string; scopes?: string[] }) {
+  return request<{ api_key: APIKey; secret: string }>("/api/developer/api-keys", {
+    method: "POST",
+    body: JSON.stringify({ ...payload, mode: "test" }),
+  }, token);
+}
+
 export async function deleteAPIKey(token: string, keyId: number) {
   return request<void>(`/api/developer/api-keys/${keyId}`, { method: "DELETE" }, token);
 }
@@ -174,6 +183,24 @@ export async function createWebhookEndpoint(token: string, payload: { label: str
 
 export async function deleteWebhookEndpoint(token: string, endpointId: number) {
   return request<void>(`/api/developer/webhooks/${endpointId}`, { method: "DELETE" }, token);
+}
+
+export async function fetchWebhookDeliveries(token: string) {
+  return request<WebhookDeliveryListResponse>("/api/developer/webhook-deliveries?limit=50", {}, token);
+}
+
+export async function resendWebhookDelivery(token: string, deliveryId: number) {
+  return request<{ delivery: WebhookDelivery }>(`/api/developer/webhook-deliveries/${deliveryId}/resend`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  }, token);
+}
+
+export async function simulateTestPayment(apiKey: string, invoiceId: number) {
+  return request<Invoice>(`/v1/test/invoices/${invoiceId}/simulate-payment`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  }, apiKey);
 }
 
 export async function cancelInvoice(token: string, invoiceId: number) {
@@ -239,6 +266,26 @@ export async function createAdminBillingCheckout(token: string, sellerId: number
 }) {
   return request<AdminBillingCheckoutResponse>(`/api/admin/sellers/${sellerId}/billing-checkout`, {
     method: "POST",
+    body: JSON.stringify(payload),
+  }, token);
+}
+
+import type { AdminBlogPost, AdminBlogPostListResponse } from "./types";
+
+export async function fetchAdminBlogPosts(token: string) {
+  return request<AdminBlogPost[] | AdminBlogPostListResponse>("/api/admin/blog", {}, token);
+}
+
+export async function createAdminBlogPost(token: string, payload: Partial<AdminBlogPost>) {
+  return request<AdminBlogPost>("/api/admin/blog", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, token);
+}
+
+export async function updateAdminBlogPost(token: string, id: number, payload: Partial<AdminBlogPost>) {
+  return request<AdminBlogPost>(`/api/admin/blog/${id}`, {
+    method: "PUT",
     body: JSON.stringify(payload),
   }, token);
 }

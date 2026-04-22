@@ -354,6 +354,7 @@ type CreateInvoiceParams struct {
 	PaymentComment     *string
 	MatchingSuffix     *decimal.Decimal
 	ExpiresAt          time.Time
+	Mode               string
 }
 
 func (s *Store) CreateInvoice(ctx context.Context, params CreateInvoiceParams) (Invoice, error) {
@@ -362,6 +363,9 @@ func (s *Store) CreateInvoice(ctx context.Context, params CreateInvoiceParams) (
 		return Invoice{}, fmt.Errorf("begin create invoice tx: %w", err)
 	}
 	defer tx.Rollback(ctx)
+	if params.Mode == "" {
+		params.Mode = "live"
+	}
 
 	var invoice Invoice
 	row := tx.QueryRow(ctx, `
@@ -379,13 +383,14 @@ func (s *Store) CreateInvoice(ctx context.Context, params CreateInvoiceParams) (
 			payment_comment,
 			matching_suffix,
 			status,
-			expires_at
+			expires_at,
+			mode
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'awaiting_payment', $13)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'awaiting_payment', $13, $14)
 		RETURNING id, public_id, seller_id, kind, subscription_days, plan_code, title, base_amount_usd, payable_amount, payable_network, destination_address,
-		          payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, created_at
+		          payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, mode, created_at
 	`, params.PublicID, params.SellerID, params.Kind, params.SubscriptionDays, params.PlanCode, params.Title, params.BaseAmountUSD, params.PayableAmount, params.PayableNetwork,
-		params.DestinationAddress, params.PaymentComment, params.MatchingSuffix, params.ExpiresAt)
+		params.DestinationAddress, params.PaymentComment, params.MatchingSuffix, params.ExpiresAt, params.Mode)
 	invoice, err = scanInvoice(row)
 	if err != nil {
 		return Invoice{}, err
@@ -412,7 +417,7 @@ func (s *Store) ListInvoices(ctx context.Context, sellerID int64, limit int, off
 	invoices := make([]Invoice, 0)
 	rows, err := s.pool.Query(ctx, `
 		SELECT id, public_id, seller_id, kind, subscription_days, plan_code, title, base_amount_usd, payable_amount, payable_network, destination_address,
-		       payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, created_at
+		       payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, mode, created_at
 		FROM invoices
 		WHERE seller_id = $1
 		ORDER BY created_at DESC
@@ -436,7 +441,7 @@ func (s *Store) ListInvoices(ctx context.Context, sellerID int64, limit int, off
 func (s *Store) GetInvoiceByID(ctx context.Context, sellerID int64, invoiceID int64) (Invoice, error) {
 	row := s.pool.QueryRow(ctx, `
 		SELECT id, public_id, seller_id, kind, subscription_days, plan_code, title, base_amount_usd, payable_amount, payable_network, destination_address,
-		       payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, created_at
+		       payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, mode, created_at
 		FROM invoices
 		WHERE id = $1 AND seller_id = $2
 	`, invoiceID, sellerID)
@@ -446,7 +451,7 @@ func (s *Store) GetInvoiceByID(ctx context.Context, sellerID int64, invoiceID in
 func (s *Store) GetInvoiceByPublicID(ctx context.Context, publicID string) (Invoice, error) {
 	row := s.pool.QueryRow(ctx, `
 		SELECT id, public_id, seller_id, kind, subscription_days, plan_code, title, base_amount_usd, payable_amount, payable_network, destination_address,
-		       payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, created_at
+		       payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, mode, created_at
 		FROM invoices
 		WHERE public_id = $1
 	`, publicID)
@@ -459,7 +464,7 @@ func (s *Store) SetInvoiceStatus(ctx context.Context, sellerID int64, invoiceID 
 		SET status = $1
 		WHERE id = $2 AND seller_id = $3
 		RETURNING id, public_id, seller_id, kind, subscription_days, plan_code, title, base_amount_usd, payable_amount, payable_network, destination_address,
-		          payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, created_at
+		          payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, mode, created_at
 	`, status, invoiceID, sellerID)
 	invoice, err := scanInvoice(row)
 	if err != nil {
@@ -494,7 +499,7 @@ func (s *Store) MarkInvoicePaidManual(ctx context.Context, sellerID int64, invoi
 		SET status = 'paid', paid_at = NOW()
 		WHERE id = $1 AND seller_id = $2
 		RETURNING id, public_id, seller_id, kind, subscription_days, plan_code, title, base_amount_usd, payable_amount, payable_network, destination_address,
-		          payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, created_at
+		          payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, mode, created_at
 	`, invoiceID, sellerID)
 	invoice, err := scanInvoice(row)
 	if err != nil {
@@ -551,11 +556,12 @@ func (s *Store) RecordObservedTransfer(ctx context.Context, transfer ObservedTra
 func (s *Store) FindInvoiceByTONComment(ctx context.Context, address string, comment string) (Invoice, error) {
 	row := s.pool.QueryRow(ctx, `
 		SELECT id, public_id, seller_id, kind, subscription_days, plan_code, title, base_amount_usd, payable_amount, payable_network, destination_address,
-		       payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, created_at
+		       payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, mode, created_at
 		FROM invoices
 		WHERE payable_network = 'TON'
 		  AND destination_address = $1
 		  AND payment_comment = $2
+		  AND mode = 'live'
 		  AND status IN ('awaiting_payment', 'expired')
 		ORDER BY created_at DESC
 		LIMIT 1
@@ -566,11 +572,12 @@ func (s *Store) FindInvoiceByTONComment(ctx context.Context, address string, com
 func (s *Store) FindInvoiceByExactAmount(ctx context.Context, address string, network Network, amount decimal.Decimal) (Invoice, error) {
 	row := s.pool.QueryRow(ctx, `
 		SELECT id, public_id, seller_id, kind, subscription_days, plan_code, title, base_amount_usd, payable_amount, payable_network, destination_address,
-		       payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, created_at
+		       payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, mode, created_at
 		FROM invoices
 		WHERE destination_address = $1
 		  AND payable_network = $2
 		  AND payable_amount = $3
+		  AND mode = 'live'
 		  AND status IN ('awaiting_payment', 'expired')
 		ORDER BY created_at DESC
 		LIMIT 1
@@ -581,10 +588,11 @@ func (s *Store) FindInvoiceByExactAmount(ctx context.Context, address string, ne
 func (s *Store) FindPotentialUnderpaidInvoice(ctx context.Context, address string, network Network, amount decimal.Decimal) (Invoice, error) {
 	row := s.pool.QueryRow(ctx, `
 		SELECT id, public_id, seller_id, kind, subscription_days, plan_code, title, base_amount_usd, payable_amount, payable_network, destination_address,
-		       payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, created_at
+		       payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, mode, created_at
 		FROM invoices
 		WHERE destination_address = $1
 		  AND payable_network = $2
+		  AND mode = 'live'
 		  AND status IN ('awaiting_payment', 'expired')
 		  AND payable_amount > $3
 		  AND payable_amount - $3 <= 2.500000
@@ -610,7 +618,7 @@ func (s *Store) CompleteInvoicePayment(ctx context.Context, invoiceID int64, pre
 		    paid_at = CASE WHEN $1::invoice_status = 'paid'::invoice_status THEN $3 ELSE paid_at END
 		WHERE id = $4
 		RETURNING id, public_id, seller_id, kind, subscription_days, plan_code, title, base_amount_usd, payable_amount, payable_network, destination_address,
-		          payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, created_at
+		          payment_comment, matching_suffix, status, expires_at, tx_hash, paid_at, mode, created_at
 	`, status, txHash, paidAt, invoiceID)
 	invoice, err = scanInvoice(row)
 	if err != nil {
@@ -674,7 +682,9 @@ func (s *Store) GetWatchedWallets(ctx context.Context) ([]WatchedWallet, error) 
 			i.payable_network,
 			i.destination_address
 		FROM invoices i
-		WHERE i.status = 'awaiting_payment'
+		WHERE i.mode = 'live'
+		  AND i.status IN ('awaiting_payment', 'expired')
+		  AND i.expires_at >= NOW() - INTERVAL '24 hours'
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("get watched wallets: %w", err)
@@ -835,6 +845,7 @@ func scanInvoice(row interface{ Scan(dest ...any) error }) (Invoice, error) {
 		&invoice.ExpiresAt,
 		&invoice.TxHash,
 		&invoice.PaidAt,
+		&invoice.Mode,
 		&invoice.CreatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {

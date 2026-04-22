@@ -2,8 +2,8 @@ package http
 
 import (
 	"encoding/json"
-	"net/http/httptest"
 	stdhttp "net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -165,14 +165,20 @@ func TestExtractAPIKey(t *testing.T) {
 }
 
 func TestValidateWebhookURL(t *testing.T) {
-	if err := validateWebhookURL("https://example.com/hooks"); err != nil {
+	if err := validateWebhookURL("https://example.com/hooks", "production"); err != nil {
 		t.Fatalf("expected valid webhook URL, got %v", err)
 	}
-	if err := validateWebhookURL("ftp://example.com/hooks"); err == nil {
+	if err := validateWebhookURL("ftp://example.com/hooks", "production"); err == nil {
 		t.Fatal("expected unsupported scheme error")
 	}
-	if err := validateWebhookURL("https:///hooks"); err == nil {
+	if err := validateWebhookURL("https:///hooks", "production"); err == nil {
 		t.Fatal("expected missing host error")
+	}
+	if err := validateWebhookURL("http://example.com/hooks", "production"); err == nil {
+		t.Fatal("expected production http webhook error")
+	}
+	if err := validateWebhookURL("https://127.0.0.1/hooks", "production"); err == nil {
+		t.Fatal("expected loopback webhook error")
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -17,6 +18,7 @@ type APIKey struct {
 	SellerID   int64      `json:"seller_id"`
 	Label      string     `json:"label"`
 	Prefix     string     `json:"prefix"`
+	Mode       string     `json:"mode"`
 	Scopes     []string   `json:"scopes"`
 	LastUsedAt *time.Time `json:"last_used_at"`
 	RevokedAt  *time.Time `json:"revoked_at,omitempty"`
@@ -33,7 +35,7 @@ type WebhookEndpoint struct {
 	SellerID       int64      `json:"seller_id"`
 	Label          string     `json:"label"`
 	URL            string     `json:"url"`
-	Secret         string     `json:"secret"`
+	Secret         string     `json:"secret,omitempty"`
 	IsActive       bool       `json:"is_active"`
 	LastDeliveryAt *time.Time `json:"last_delivery_at"`
 	LastSuccessAt  *time.Time `json:"last_success_at"`
@@ -41,15 +43,42 @@ type WebhookEndpoint struct {
 }
 
 type WebhookDelivery struct {
-	ID          int64
-	EndpointID  int64
-	SellerID    int64
-	TargetURL   string
-	Secret      string
-	EventType   string
-	Payload     json.RawMessage
-	Attempts    int
-	MaxAttempts int
+	ID             int64           `json:"id"`
+	EventID        string          `json:"event_id"`
+	EndpointID     int64           `json:"endpoint_id"`
+	SellerID       int64           `json:"seller_id"`
+	TargetURL      string          `json:"target_url,omitempty"`
+	Secret         string          `json:"-"`
+	EventType      string          `json:"event_type"`
+	Payload        json.RawMessage `json:"payload"`
+	Status         string          `json:"status,omitempty"`
+	Attempts       int             `json:"attempts"`
+	MaxAttempts    int             `json:"max_attempts"`
+	AvailableAt    time.Time       `json:"available_at,omitempty"`
+	LastHTTPStatus *int            `json:"last_http_status,omitempty"`
+	LastError      *string         `json:"last_error,omitempty"`
+	CreatedAt      time.Time       `json:"created_at,omitempty"`
+	SentAt         *time.Time      `json:"sent_at,omitempty"`
+}
+
+type IdempotencyRecord struct {
+	ID             int64
+	SellerID       int64
+	APIKeyID       int64
+	Method         string
+	Path           string
+	IdempotencyKey string
+	RequestHash    string
+	StatusCode     *int
+	ResponseBody   json.RawMessage
+}
+
+type WatcherCheckpoint struct {
+	PollNetwork        Network
+	PayableNetwork     Network
+	DestinationAddress string
+	LastBlock          int64
+	LastObservedAt     *time.Time
 }
 
 func (s *Store) CountActiveAPIKeys(ctx context.Context, sellerID int64) (int, error) {
@@ -67,7 +96,7 @@ func (s *Store) CountActiveAPIKeys(ctx context.Context, sellerID int64) (int, er
 
 func (s *Store) ListAPIKeys(ctx context.Context, sellerID int64) ([]APIKey, error) {
 	rows, err := s.pool.Query(ctx, `
-		SELECT id, seller_id, label, prefix, scopes, last_used_at, revoked_at, created_at
+		SELECT id, seller_id, label, prefix, mode, scopes, last_used_at, revoked_at, created_at
 		FROM api_keys
 		WHERE seller_id = $1
 		  AND revoked_at IS NULL
@@ -89,12 +118,12 @@ func (s *Store) ListAPIKeys(ctx context.Context, sellerID int64) ([]APIKey, erro
 	return items, rows.Err()
 }
 
-func (s *Store) CreateAPIKey(ctx context.Context, sellerID int64, label string, prefix string, tokenHash string, scopes []string) (APIKey, error) {
+func (s *Store) CreateAPIKey(ctx context.Context, sellerID int64, label string, prefix string, tokenHash string, scopes []string, mode string) (APIKey, error) {
 	row := s.pool.QueryRow(ctx, `
-		INSERT INTO api_keys (seller_id, label, prefix, token_hash, scopes)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, seller_id, label, prefix, scopes, last_used_at, revoked_at, created_at
-	`, sellerID, label, prefix, tokenHash, scopes)
+		INSERT INTO api_keys (seller_id, label, prefix, token_hash, scopes, mode)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, seller_id, label, prefix, mode, scopes, last_used_at, revoked_at, created_at
+	`, sellerID, label, prefix, tokenHash, scopes, mode)
 	item, err := scanAPIKey(row)
 	if err != nil {
 		metrics.IncResourceOperation("api_key", "create", "failure")
@@ -129,7 +158,7 @@ func (s *Store) GetAPIKeyByTokenHash(ctx context.Context, tokenHash string) (API
 	var lastUsedAt sql.NullTime
 	var revokedAt sql.NullTime
 	row := s.pool.QueryRow(ctx, `
-		SELECT id, seller_id, label, prefix, token_hash, scopes, last_used_at, revoked_at, created_at
+		SELECT id, seller_id, label, prefix, mode, token_hash, scopes, last_used_at, revoked_at, created_at
 		FROM api_keys
 		WHERE token_hash = $1
 		  AND revoked_at IS NULL
@@ -139,6 +168,7 @@ func (s *Store) GetAPIKeyByTokenHash(ctx context.Context, tokenHash string) (API
 		&record.SellerID,
 		&record.Label,
 		&record.Prefix,
+		&record.Mode,
 		&record.TokenHash,
 		&record.Scopes,
 		&lastUsedAt,
@@ -231,6 +261,11 @@ func (s *Store) ListWebhookEndpoints(ctx context.Context, sellerID int64) ([]Web
 	return items, rows.Err()
 }
 
+func (s *Store) PublicWebhookEndpoint(endpoint WebhookEndpoint) WebhookEndpoint {
+	endpoint.Secret = ""
+	return endpoint
+}
+
 func (s *Store) CreateWebhookEndpoint(ctx context.Context, sellerID int64, label string, endpointURL string, secret string) (WebhookEndpoint, error) {
 	row := s.pool.QueryRow(ctx, `
 		INSERT INTO webhook_endpoints (seller_id, label, url, secret)
@@ -243,6 +278,23 @@ func (s *Store) CreateWebhookEndpoint(ctx context.Context, sellerID int64, label
 		return WebhookEndpoint{}, err
 	}
 	metrics.IncResourceOperation("webhook_endpoint", "create", "success")
+	return item, nil
+}
+
+func (s *Store) RotateWebhookEndpointSecret(ctx context.Context, sellerID int64, endpointID int64, secret string) (WebhookEndpoint, error) {
+	row := s.pool.QueryRow(ctx, `
+		UPDATE webhook_endpoints
+		SET secret = $3
+		WHERE id = $1
+		  AND seller_id = $2
+		  AND is_active = TRUE
+		RETURNING id, seller_id, label, url, secret, is_active, last_delivery_at, last_success_at, created_at
+	`, endpointID, sellerID, secret)
+	item, err := scanWebhookEndpoint(row)
+	if err != nil {
+		return WebhookEndpoint{}, err
+	}
+	metrics.IncResourceOperation("webhook_endpoint", "rotate_secret", "success")
 	return item, nil
 }
 
@@ -274,7 +326,7 @@ func (s *Store) ClaimWebhookDeliveries(ctx context.Context, limit int) ([]Webhoo
 	defer tx.Rollback(ctx)
 
 	rows, err := tx.Query(ctx, `
-		SELECT d.id, d.endpoint_id, d.seller_id, e.url, e.secret, d.event_type, d.payload, d.attempts, d.max_attempts
+		SELECT d.id, d.event_id, d.endpoint_id, d.seller_id, e.url, e.secret, d.event_type, d.payload, d.attempts, d.max_attempts
 		FROM webhook_deliveries d
 		JOIN webhook_endpoints e ON e.id = d.endpoint_id
 		WHERE d.status IN ('pending', 'failed')
@@ -294,6 +346,7 @@ func (s *Store) ClaimWebhookDeliveries(ctx context.Context, limit int) ([]Webhoo
 		var item WebhookDelivery
 		if err := rows.Scan(
 			&item.ID,
+			&item.EventID,
 			&item.EndpointID,
 			&item.SellerID,
 			&item.TargetURL,
@@ -411,13 +464,147 @@ func enqueueWebhookDeliveriesTx(ctx context.Context, tx pgx.Tx, sellerID int64, 
 	}
 
 	for _, endpointID := range endpointIDs {
+		eventID := fmt.Sprintf("evt_%d_%d", time.Now().UTC().UnixNano(), endpointID)
 		if _, err := tx.Exec(ctx, `
-			INSERT INTO webhook_deliveries (endpoint_id, seller_id, event_type, payload, max_attempts)
-			VALUES ($1, $2, $3, $4, $5)
-		`, endpointID, sellerID, eventType, payload, maxAttempts); err != nil {
+			INSERT INTO webhook_deliveries (endpoint_id, seller_id, event_type, payload, max_attempts, event_id)
+			VALUES ($1, $2, $3, $4, $5, $6)
+		`, endpointID, sellerID, eventType, payloadWithEventID(payload, eventID), maxAttempts, eventID); err != nil {
 			return fmt.Errorf("insert webhook delivery: %w", err)
 		}
 		metrics.IncDeliveryEvent("webhook", "enqueue", "success")
+	}
+	return nil
+}
+
+func payloadWithEventID(payload json.RawMessage, eventID string) json.RawMessage {
+	var body map[string]any
+	if err := json.Unmarshal(payload, &body); err != nil {
+		return payload
+	}
+	body["event_id"] = eventID
+	return MustJSON(body)
+}
+
+func (s *Store) ListWebhookDeliveries(ctx context.Context, sellerID int64, limit int) ([]WebhookDelivery, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT id, event_id, endpoint_id, seller_id, event_type, payload, status, attempts, max_attempts, available_at, last_http_status, last_error, created_at, sent_at
+		FROM webhook_deliveries
+		WHERE seller_id = $1
+		ORDER BY created_at DESC
+		LIMIT $2
+	`, sellerID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("list webhook deliveries: %w", err)
+	}
+	defer rows.Close()
+
+	var items []WebhookDelivery
+	for rows.Next() {
+		var item WebhookDelivery
+		if err := rows.Scan(&item.ID, &item.EventID, &item.EndpointID, &item.SellerID, &item.EventType, &item.Payload, &item.Status, &item.Attempts, &item.MaxAttempts, &item.AvailableAt, &item.LastHTTPStatus, &item.LastError, &item.CreatedAt, &item.SentAt); err != nil {
+			return nil, fmt.Errorf("scan webhook delivery list item: %w", err)
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *Store) ResendWebhookDelivery(ctx context.Context, sellerID int64, deliveryID int64) (WebhookDelivery, error) {
+	var source WebhookDelivery
+	row := s.pool.QueryRow(ctx, `
+		SELECT id, event_id, endpoint_id, seller_id, event_type, payload, max_attempts
+		FROM webhook_deliveries
+		WHERE id = $1 AND seller_id = $2
+	`, deliveryID, sellerID)
+	if err := row.Scan(&source.ID, &source.EventID, &source.EndpointID, &source.SellerID, &source.EventType, &source.Payload, &source.MaxAttempts); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return WebhookDelivery{}, ErrNotFound
+		}
+		return WebhookDelivery{}, fmt.Errorf("load webhook delivery for resend: %w", err)
+	}
+
+	eventID := fmt.Sprintf("evt_%d_resend_%d", time.Now().UTC().UnixNano(), deliveryID)
+	row = s.pool.QueryRow(ctx, `
+		INSERT INTO webhook_deliveries (endpoint_id, seller_id, event_type, payload, max_attempts, event_id, resend_of)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING id, event_id, endpoint_id, seller_id, event_type, payload, status, attempts, max_attempts, available_at, last_http_status, last_error, created_at, sent_at
+	`, source.EndpointID, sellerID, source.EventType, payloadWithEventID(source.Payload, eventID), source.MaxAttempts, eventID, source.ID)
+	var item WebhookDelivery
+	if err := row.Scan(&item.ID, &item.EventID, &item.EndpointID, &item.SellerID, &item.EventType, &item.Payload, &item.Status, &item.Attempts, &item.MaxAttempts, &item.AvailableAt, &item.LastHTTPStatus, &item.LastError, &item.CreatedAt, &item.SentAt); err != nil {
+		return WebhookDelivery{}, fmt.Errorf("insert webhook resend: %w", err)
+	}
+	return item, nil
+}
+
+func (s *Store) GetIdempotencyRecord(ctx context.Context, sellerID int64, apiKeyID int64, method string, path string, key string) (IdempotencyRecord, error) {
+	row := s.pool.QueryRow(ctx, `
+		SELECT id, seller_id, api_key_id, method, path, idempotency_key, request_hash, status_code, response_body
+		FROM api_idempotency_records
+		WHERE seller_id = $1 AND api_key_id = $2 AND method = $3 AND path = $4 AND idempotency_key = $5
+	`, sellerID, apiKeyID, method, path, key)
+	var item IdempotencyRecord
+	if err := row.Scan(&item.ID, &item.SellerID, &item.APIKeyID, &item.Method, &item.Path, &item.IdempotencyKey, &item.RequestHash, &item.StatusCode, &item.ResponseBody); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return IdempotencyRecord{}, ErrNotFound
+		}
+		return IdempotencyRecord{}, fmt.Errorf("get idempotency record: %w", err)
+	}
+	return item, nil
+}
+
+func (s *Store) CreateIdempotencyRecord(ctx context.Context, sellerID int64, apiKeyID int64, method string, path string, key string, requestHash string) (IdempotencyRecord, error) {
+	row := s.pool.QueryRow(ctx, `
+		INSERT INTO api_idempotency_records (seller_id, api_key_id, method, path, idempotency_key, request_hash)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, seller_id, api_key_id, method, path, idempotency_key, request_hash, status_code, response_body
+	`, sellerID, apiKeyID, method, path, key, requestHash)
+	var item IdempotencyRecord
+	if err := row.Scan(&item.ID, &item.SellerID, &item.APIKeyID, &item.Method, &item.Path, &item.IdempotencyKey, &item.RequestHash, &item.StatusCode, &item.ResponseBody); err != nil {
+		return IdempotencyRecord{}, fmt.Errorf("create idempotency record: %w", err)
+	}
+	return item, nil
+}
+
+func (s *Store) CompleteIdempotencyRecord(ctx context.Context, id int64, statusCode int, response json.RawMessage) error {
+	_, err := s.pool.Exec(ctx, `
+		UPDATE api_idempotency_records
+		SET status_code = $2, response_body = $3, updated_at = NOW()
+		WHERE id = $1
+	`, id, statusCode, response)
+	if err != nil {
+		return fmt.Errorf("complete idempotency record: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) GetWatcherCheckpoint(ctx context.Context, pollNetwork Network, payableNetwork Network, address string) (WatcherCheckpoint, error) {
+	row := s.pool.QueryRow(ctx, `
+		SELECT poll_network, payable_network, destination_address, last_block, last_observed_at
+		FROM watcher_checkpoints
+		WHERE poll_network = $1 AND payable_network = $2 AND destination_address = $3
+	`, pollNetwork, payableNetwork, address)
+	var item WatcherCheckpoint
+	if err := row.Scan(&item.PollNetwork, &item.PayableNetwork, &item.DestinationAddress, &item.LastBlock, &item.LastObservedAt); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return WatcherCheckpoint{PollNetwork: pollNetwork, PayableNetwork: payableNetwork, DestinationAddress: address}, ErrNotFound
+		}
+		return WatcherCheckpoint{}, fmt.Errorf("get watcher checkpoint: %w", err)
+	}
+	return item, nil
+}
+
+func (s *Store) SaveWatcherCheckpoint(ctx context.Context, checkpoint WatcherCheckpoint) error {
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO watcher_checkpoints (poll_network, payable_network, destination_address, last_block, last_observed_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, NOW())
+		ON CONFLICT (poll_network, payable_network, destination_address)
+		DO UPDATE SET
+			last_block = GREATEST(watcher_checkpoints.last_block, EXCLUDED.last_block),
+			last_observed_at = GREATEST(COALESCE(watcher_checkpoints.last_observed_at, EXCLUDED.last_observed_at), COALESCE(EXCLUDED.last_observed_at, watcher_checkpoints.last_observed_at)),
+			updated_at = NOW()
+	`, checkpoint.PollNetwork, checkpoint.PayableNetwork, checkpoint.DestinationAddress, checkpoint.LastBlock, checkpoint.LastObservedAt)
+	if err != nil {
+		return fmt.Errorf("save watcher checkpoint: %w", err)
 	}
 	return nil
 }
@@ -431,6 +618,7 @@ func scanAPIKey(row interface{ Scan(dest ...any) error }) (APIKey, error) {
 		&item.SellerID,
 		&item.Label,
 		&item.Prefix,
+		&item.Mode,
 		&item.Scopes,
 		&lastUsedAt,
 		&revokedAt,

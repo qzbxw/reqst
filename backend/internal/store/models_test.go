@@ -20,6 +20,9 @@ func TestNetworkHelpers(t *testing.T) {
 	if !NetworkBASE.IsSupportedPayableNetwork() {
 		t.Fatal("expected BASE to be a supported payable network")
 	}
+	if NetworkTON_USDT.IsSupportedPayableNetwork() {
+		t.Fatal("expected TON_USDT to stay disabled until end-to-end support is ready")
+	}
 }
 
 func TestValidateWalletAddress(t *testing.T) {
@@ -66,7 +69,7 @@ func TestPlanHelpers(t *testing.T) {
 	if got := NormalizePlanCode("unknown"); got != PlanCodeTrial {
 		t.Fatalf("expected fallback trial plan, got %s", got)
 	}
-	if got := ResolvePlan(PlanCodeEnterprise).PriceUSDString; got != "499" {
+	if got := ResolvePlan(PlanCodeEnterprise).PriceUSDString; got != "Custom" {
 		t.Fatalf("unexpected enterprise price string: %s", got)
 	}
 	if plans := ListPaidPlans(); len(plans) != 3 {

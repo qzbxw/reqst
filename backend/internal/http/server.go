@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"reqst/backend/internal/config"
@@ -15,6 +16,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type Server struct {
@@ -24,6 +27,18 @@ type Server struct {
 	adminService   *service.AdminService
 	invoiceService *service.InvoiceService
 	paymentService *service.PaymentService
+	apiLimiter     *memoryRateLimiter
+}
+
+type memoryRateLimiter struct {
+	mu      sync.Mutex
+	buckets map[string]rateBucket
+}
+
+type rateBucket struct {
+	tokens    int
+	resetAt   time.Time
+	lastLimit int
 }
 
 type sellerContext struct {
@@ -39,6 +54,7 @@ func NewServer(cfg config.Config, st *store.Store, authService *service.AuthServ
 		adminService:   adminService,
 		invoiceService: invoiceService,
 		paymentService: paymentService,
+		apiLimiter:     &memoryRateLimiter{buckets: map[string]rateBucket{}},
 	}
 
 	router := gin.New()
@@ -76,7 +92,10 @@ func NewServer(cfg config.Config, st *store.Store, authService *service.AuthServ
 	api.DELETE("/developer/api-keys/:id", server.handleDeleteAPIKey)
 	api.GET("/developer/webhooks", server.handleListWebhookEndpoints)
 	api.POST("/developer/webhooks", server.handleCreateWebhookEndpoint)
+	api.POST("/developer/webhooks/:id/rotate-secret", server.handleRotateWebhookEndpointSecret)
 	api.DELETE("/developer/webhooks/:id", server.handleDeleteWebhookEndpoint)
+	api.GET("/developer/webhook-deliveries", server.handleListWebhookDeliveries)
+	api.POST("/developer/webhook-deliveries/:id/resend", server.handleResendWebhookDelivery)
 	api.GET("/wallets", server.handleListWallets)
 	api.POST("/wallets", server.handleCreateWallet)
 	api.DELETE("/wallets/:id", server.handleDeleteWallet)
@@ -94,12 +113,24 @@ func NewServer(cfg config.Config, st *store.Store, authService *service.AuthServ
 	devAPI.POST("/invoices", server.handleAPICreateInvoice)
 	devAPI.GET("/invoices/:id", server.handleAPIGetInvoice)
 	devAPI.POST("/invoices/:id/cancel", server.handleAPICancelInvoice)
+	devAPI.POST("/test/invoices/:id/simulate-payment", server.handleAPISimulatePayment)
 
 	adminAPI := router.Group("/api/admin")
 	adminAPI.Use(server.adminMiddleware())
 	adminAPI.GET("/overview", server.handleAdminOverview)
 	adminAPI.GET("/invoices", server.handleAdminInvoices)
 	adminAPI.POST("/sellers/:id/billing-checkout", server.handleAdminCreateBillingCheckout)
+
+	adminAPI.GET("/blog", server.handleAdminListBlogPosts)
+	adminAPI.POST("/blog", server.handleAdminCreateBlogPost)
+	adminAPI.PUT("/blog/:id", server.handleAdminUpdateBlogPost)
+	adminAPI.DELETE("/blog/:id", server.handleAdminDeleteBlogPost)
+
+	publicBlog := router.Group("/api/public/blog")
+	publicBlog.GET("", server.handlePublicListBlogPosts)
+	publicBlog.GET("/:slug", server.handlePublicGetBlogPost)
+
+	router.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	return router
 }
@@ -638,6 +669,7 @@ func publicInvoiceResponse(invoice store.Invoice) gin.H {
 		"destination_address": invoice.DestinationAddress,
 		"payment_comment":     comment,
 		"status":              status,
+		"mode":                invoice.Mode,
 		"expires_at":          invoice.ExpiresAt,
 		"created_at":          invoice.CreatedAt,
 		"tx_hash":             invoice.TxHash,
@@ -711,7 +743,7 @@ func validateWallet(network store.Network, address string) error {
 func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Internal-Token")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Internal-Token, X-API-Key, Idempotency-Key")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
 		if c.Request.Method == http.MethodOptions {
 			c.AbortWithStatus(http.StatusNoContent)

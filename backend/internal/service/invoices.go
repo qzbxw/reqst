@@ -41,6 +41,7 @@ type CreateInvoiceInput struct {
 	PayableNetwork   store.Network
 	WalletID         int64
 	ExpiresInMinutes int
+	Mode             string
 }
 
 func NewInvoiceService(st *store.Store, tonRateEnv string) *InvoiceService {
@@ -115,16 +116,18 @@ func (s *InvoiceService) CreateInvoice(ctx context.Context, seller store.Seller,
 		}
 	}
 
+	mode := normalizedMode(input.Mode)
 	invoice, err := s.createInvoiceWithDestination(ctx, store.CreateInvoiceParams{
 		SellerID:           seller.ID,
 		Kind:               store.InvoiceKindMerchant,
 		SubscriptionDays:   0,
 		PlanCode:           "",
-		CountTowardsTrial:  true,
+		CountTowardsTrial:  mode != "test",
 		Title:              strings.TrimSpace(input.Title),
 		BaseAmountUSD:      input.BaseAmountUSD.Round(6),
 		PayableNetwork:     input.PayableNetwork,
 		DestinationAddress: wallet.Address,
+		Mode:               mode,
 	}, input.ExpiresInMinutes)
 	if err != nil {
 		metrics.IncInvoiceOperation("create", source, string(store.InvoiceKindMerchant), string(input.PayableNetwork), string(planCode), "failure", "create_invoice")
@@ -182,6 +185,7 @@ func (s *InvoiceService) CreatePlanInvoiceWithPrice(ctx context.Context, seller 
 		BaseAmountUSD:      baseAmountUSD,
 		PayableNetwork:     network,
 		DestinationAddress: address,
+		Mode:               "live",
 	}, 60)
 	if err != nil {
 		metrics.IncInvoiceOperation("create", source, string(store.InvoiceKindSubscription), string(network), string(plan.Code), "failure", "create_invoice")
@@ -189,6 +193,13 @@ func (s *InvoiceService) CreatePlanInvoiceWithPrice(ctx context.Context, seller 
 	}
 	metrics.IncInvoiceOperation("create", source, string(store.InvoiceKindSubscription), string(invoice.PayableNetwork), string(plan.Code), "success", "created")
 	return invoice, nil
+}
+
+func normalizedMode(mode string) string {
+	if strings.EqualFold(strings.TrimSpace(mode), "test") {
+		return "test"
+	}
+	return "live"
 }
 
 func (s *InvoiceService) createInvoiceWithDestination(ctx context.Context, params store.CreateInvoiceParams, expiresInMinutes int) (store.Invoice, error) {

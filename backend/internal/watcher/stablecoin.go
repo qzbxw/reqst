@@ -83,14 +83,25 @@ func (w *Watcher) pollEVMStablecoin(ctx context.Context, wallet store.WatchedWal
 	if err != nil {
 		return nil, fmt.Errorf("parse latest evm block: %w", err)
 	}
-	fromBlock := latestBlock - 2500
+	toBlock := latestBlock - w.cfg.EVMConfirmationDepth
+	if toBlock < 0 {
+		return nil, nil
+	}
+	fromBlock := toBlock - w.cfg.WatcherBackfillBlocks
+	checkpoint, err := w.store.GetWatcherCheckpoint(ctx, wallet.PollNetwork, wallet.PayableNetwork, wallet.Address)
+	if err == nil && checkpoint.LastBlock > 0 {
+		fromBlock = checkpoint.LastBlock + 1
+	}
 	if fromBlock < 0 {
 		fromBlock = 0
+	}
+	if fromBlock > toBlock {
+		return nil, nil
 	}
 
 	filter := map[string]any{
 		"fromBlock": hexQuantity(fromBlock),
-		"toBlock":   "latest",
+		"toBlock":   hexQuantity(toBlock),
 		"address":   spec.EVMContract,
 		"topics":    []any{erc20TransferTopic, nil, paddedEVMTopic(wallet.Address)},
 	}
@@ -139,6 +150,7 @@ func (w *Watcher) pollEVMStablecoin(ctx context.Context, wallet store.WatchedWal
 		}
 		transfers = append(transfers, transfer)
 	}
+	transfers = w.filterTransfersAfterCheckpoint(ctx, wallet, transfers, toBlock)
 	return transfers, nil
 }
 
@@ -155,7 +167,7 @@ func (w *Watcher) pollSolanaStablecoin(ctx context.Context, wallet store.Watched
 	if err := w.callSolanaRPC(ctx, w.cfg.SolanaRPCURL, "getTokenAccountsByOwner", []any{
 		wallet.Address,
 		map[string]any{"mint": spec.SolanaMint},
-		map[string]any{"encoding": "jsonParsed"},
+		map[string]any{"encoding": "jsonParsed", "commitment": "finalized"},
 	}, &tokenAccounts); err != nil {
 		return nil, err
 	}
@@ -168,7 +180,7 @@ func (w *Watcher) pollSolanaStablecoin(ctx context.Context, wallet store.Watched
 		}
 		if err := w.callSolanaRPC(ctx, w.cfg.SolanaRPCURL, "getSignaturesForAddress", []any{
 			account.Pubkey,
-			map[string]any{"limit": 25},
+			map[string]any{"limit": 25, "commitment": "finalized"},
 		}, &signatures); err != nil {
 			continue
 		}
@@ -183,7 +195,7 @@ func (w *Watcher) pollSolanaStablecoin(ctx context.Context, wallet store.Watched
 			}
 			if err := w.callSolanaRPC(ctx, w.cfg.SolanaRPCURL, "getTransaction", []any{
 				signature.Signature,
-				map[string]any{"encoding": "jsonParsed", "maxSupportedTransactionVersion": 0},
+				map[string]any{"encoding": "jsonParsed", "maxSupportedTransactionVersion": 0, "commitment": "finalized"},
 			}, &tx); err != nil {
 				continue
 			}
@@ -215,6 +227,7 @@ func (w *Watcher) pollSolanaStablecoin(ctx context.Context, wallet store.Watched
 			}
 		}
 	}
+	transfers = w.filterTransfersAfterCheckpoint(ctx, wallet, transfers, 0)
 	return transfers, nil
 }
 
