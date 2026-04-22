@@ -505,20 +505,33 @@ func enqueueWebhookDeliveriesTx(ctx context.Context, tx pgx.Tx, sellerID int64, 
 		return err
 	}
 
+	if len(endpointIDs) == 0 {
+		return nil
+	}
+
+	batch := &pgx.Batch{}
 	for _, endpointID := range endpointIDs {
 		eventID := fmt.Sprintf("evt_%d_%d", time.Now().UTC().UnixNano(), endpointID)
 		if transitionID := payloadTransitionID(payload); transitionID > 0 {
 			eventID = fmt.Sprintf("evt_transition_%d_%d", transitionID, endpointID)
 		}
-		if _, err := tx.Exec(ctx, `
+		batch.Queue(`
 			INSERT INTO webhook_deliveries (endpoint_id, seller_id, event_type, payload, max_attempts, event_id)
 			VALUES ($1, $2, $3, $4, $5, $6)
 			ON CONFLICT (event_id) DO NOTHING
-		`, endpointID, sellerID, eventType, payloadWithEventID(payload, eventID), maxAttempts, eventID); err != nil {
-			return fmt.Errorf("insert webhook delivery: %w", err)
+		`, endpointID, sellerID, eventType, payloadWithEventID(payload, eventID), maxAttempts, eventID)
+	}
+
+	br := tx.SendBatch(ctx, batch)
+	defer br.Close()
+
+	for i := 0; i < len(endpointIDs); i++ {
+		if _, err := br.Exec(); err != nil {
+			return fmt.Errorf("insert webhook delivery batch: %w", err)
 		}
 		metrics.IncDeliveryEvent("webhook", "enqueue", "success")
 	}
+
 	return nil
 }
 
