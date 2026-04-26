@@ -79,11 +79,6 @@ export default function Page(props: { params: Promise<{ locale: string }> }) {
 
         <div className="container mx-auto px-6 relative z-10">
           <div className="lend-hero-copy">
-            <span className="lend-reveal--1 inline-flex items-center gap-3 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-accent font-bold text-[10px] tracking-[0.2em] uppercase mb-10">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-ping" />
-              Protocol v1.0 Live
-            </span>
-
             <h1 className="lend-reveal--1 !text-5xl md:!text-7xl lg:!text-8xl">
               {copy.hero.title.split(' ').map((word, i) => (
                 <span key={i} className="inline-block mr-[0.2em] last:mr-0">
@@ -108,21 +103,53 @@ export default function Page(props: { params: Promise<{ locale: string }> }) {
               </Link>
             </div>
 
-            {/* Architecture / Subcopy Preview */}
-            <div className="lend-reveal--4 lend-architecture-card group">
-              <div className="absolute inset-0 bg-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-[inherit]" />
-              <span className="relative z-10 uppercase tracking-[0.3em] text-accent/60 group-hover:text-accent transition-colors">Infrastructure Model</span>
-              <p className="relative z-10 text-lg opacity-40 group-hover:opacity-100 transition-opacity max-w-2xl mx-auto">
-                {copy.hero.subcopy}
-              </p>
-              
-              {/* Badges */}
-              <div className="relative z-10 flex flex-wrap justify-center gap-4 mt-10">
-                {copy.hero.badges.map((badge: string, i: number) => (
-                  <span key={badge} className="px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/10 text-[10px] font-bold tracking-widest uppercase opacity-40 group-hover:opacity-100 transition-all hover:bg-accent/10 hover:border-accent/20 hover:text-accent" style={{ transitionDelay: `${i * 50}ms` }}>
-                    {badge}
-                  </span>
-                ))}
+            {/* Redesigned Architecture / Subcopy Preview */}
+            <div className="lend-reveal--4 mt-32 relative group max-w-5xl mx-auto">
+              {/* Background Ambient Glows */}
+              <div className="absolute -top-20 -left-20 w-64 h-64 bg-accent/10 rounded-full blur-[100px] opacity-0 group-hover:opacity-40 transition-opacity duration-1000" />
+              <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-accent/5 rounded-full blur-[100px] opacity-0 group-hover:opacity-30 transition-opacity duration-1000" />
+
+              <div className="relative z-10 p-8 md:p-16 rounded-[3.5rem] bg-white/[0.01] border border-white/5 backdrop-blur-2xl transition-all duration-1000 group-hover:border-accent/20 group-hover:bg-white/[0.02] shadow-2xl overflow-hidden">
+                {/* Decorative Pattern */}
+                <div className="absolute inset-0 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity pointer-events-none" style={{ backgroundImage: 'radial-gradient(var(--accent) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+                
+                <div className="relative z-10 flex flex-col items-center">
+                  <div className="inline-flex items-center gap-4 mb-10 px-6 py-2 rounded-full bg-accent/5 border border-accent/10">
+                    <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                    <span className="uppercase tracking-[0.4em] text-[10px] font-black text-accent/80">Infrastructure Model</span>
+                  </div>
+
+                  <h3 className="text-2xl md:text-4xl font-bold mb-8 tracking-tight text-center max-w-3xl leading-tight font-['Space_Grotesk'] text-white/90">
+                    {copy.hero.subcopy}
+                  </h3>
+
+                  <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-12" />
+                  
+                  {/* Badges as Micro-Cards */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                    {copy.hero.badges.map((badge: string, i: number) => (
+                      <div 
+                        key={badge} 
+                        className="relative p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-accent/40 hover:bg-accent/5 transition-all duration-500 group/badge"
+                        style={{ transitionDelay: `${i * 50}ms` }}
+                      >
+                        <div className="flex flex-col items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center group-hover/badge:scale-110 group-hover/badge:border-accent/40 transition-all duration-500 shadow-lg">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-accent/60 group-hover/badge:text-accent transition-colors">
+                              {i === 0 && <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a2 2 0 0 0 0 4h15a1 1 0 0 0 1-1v-2" />}
+                              {i === 1 && <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />}
+                              {i === 2 && <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />}
+                              {i === 3 && <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />}
+                            </svg>
+                          </div>
+                          <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-white/40 group-hover/badge:text-white transition-colors text-center">
+                            {badge}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -149,7 +176,7 @@ export default function Page(props: { params: Promise<{ locale: string }> }) {
                 <Link 
                   key={item.id} 
                   href={`/${language}/products/${item.id}`}
-                  className={`${gridClasses} lend-card lend-spotlight-card group p-10 flex flex-col justify-between transition-all duration-[700ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:scale-[1.02]`}
+                  className={`${gridClasses} lend-card lend-spotlight-card group p-10 flex flex-col justify-between transition-all duration-700 ease-in-out hover:scale-[1.02]`}
                 >
                   <div className="lend-card-spotlight" />
                   <div className="lend-dogfood-glow" />
@@ -216,7 +243,7 @@ export default function Page(props: { params: Promise<{ locale: string }> }) {
               <Link 
                 key={uc.id} 
                 href={`/${language}/use-cases/${uc.id}`}
-                className="lend-card group relative p-10 md:p-14 transition-all duration-[700ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:scale-[1.02] hover:-translate-y-2"
+                className="lend-card group relative p-10 md:p-14 transition-all duration-700 ease-in-out hover:scale-[1.02] hover:-translate-y-2"
               >
                 <div className="lend-dogfood-glow" />
                 
@@ -289,7 +316,7 @@ export default function Page(props: { params: Promise<{ locale: string }> }) {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center group">
             {/* Manual Workflow Card */}
-            <div className="relative p-10 md:p-14 rounded-[3rem] bg-[#030303] border border-white/5 transition-all duration-[800ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-[0.97] group-hover:opacity-30 group-hover:grayscale lg:-rotate-1 hover:rotate-0 lend-reveal--2 shadow-2xl">
+            <div className="relative p-10 md:p-14 rounded-[3rem] bg-[#030303] border border-white/5 transition-all duration-700 ease-in-out group-hover:scale-[0.98] group-hover:opacity-50 group-hover:grayscale lg:-rotate-1 hover:rotate-0 lend-reveal--2 shadow-2xl">
               <div className="absolute top-0 right-0 p-10 opacity-[0.02] pointer-events-none">
                 <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-red-500">
                   <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
@@ -309,10 +336,10 @@ export default function Page(props: { params: Promise<{ locale: string }> }) {
             </div>
 
             {/* Reqst Protocol Card */}
-            <div className="relative p-10 md:p-16 rounded-[3rem] bg-white/[0.02] border border-accent/20 backdrop-blur-3xl transition-all duration-[1000ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] scale-100 lg:scale-[1.03] group-hover:scale-[1.06] group-hover:-translate-y-3 group-hover:border-accent/50 lend-reveal--2 shadow-[0_0_60px_rgba(139,92,246,0.08)] group-hover:shadow-[0_0_100px_rgba(139,92,246,0.15)] overflow-hidden">
+            <div className="relative p-10 md:p-16 rounded-[3rem] bg-white/[0.02] border border-accent/20 backdrop-blur-3xl transition-all duration-700 ease-in-out scale-100 lg:scale-[1.02] group-hover:scale-[1.05] group-hover:-translate-y-2 group-hover:border-accent/50 lend-reveal--2 shadow-[0_0_60px_rgba(139,92,246,0.08)] group-hover:shadow-[0_0_100px_rgba(139,92,246,0.15)] overflow-hidden">
               {/* Background Radiant Glow */}
-              <div className="absolute -top-24 -right-24 w-96 h-96 bg-accent/15 rounded-full blur-[120px] opacity-40 group-hover:opacity-70 transition-opacity duration-1000" />
-              <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-accent/10 rounded-full blur-[120px] opacity-20 group-hover:opacity-50 transition-opacity duration-1000" />
+              <div className="absolute -top-24 -right-24 w-96 h-96 bg-accent/15 rounded-full blur-[120px] opacity-40 group-hover:opacity-70 transition-opacity duration-700" />
+              <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-accent/10 rounded-full blur-[120px] opacity-20 group-hover:opacity-50 transition-opacity duration-700" />
               
               <div className="relative z-10">
                 <div className="flex items-center gap-4 mb-10">
@@ -350,38 +377,59 @@ export default function Page(props: { params: Promise<{ locale: string }> }) {
             <h2 className="text-4xl md:text-7xl font-bold tracking-tight">{copy.pricing.title}</h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lend-reveal--2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lend-reveal--2">
             {["merchant", "developer", "business", "enterprise"].map((tier) => {
               const t = copy.pricing[tier as keyof typeof copy.pricing];
               const isPro = tier === "business" || tier === "enterprise";
+              const isPopular = tier === "business";
+              
               return (
-                <div key={tier} className={`lend-pricing-card ${isPro ? 'lend-pricing-card--pro' : ''} group !items-start !text-left !transition-all !duration-700`}>
-                  <div className="lend-dogfood-glow" />
-                  {tier === "business" && <span className="lend-pricing-badge">Popular</span>}
+                <div 
+                  key={tier} 
+                  className={`lend-pricing-card ${isPro ? 'lend-pricing-card--pro' : ''} ${isPopular ? 'is-popular' : ''} group`}
+                >
+                  <div className="lend-pricing-glow" />
+                  {isPopular && (
+                    <div className="lend-popular-badge">
+                      <span className="relative z-10">{copy.pricing.popular || "Popular"}</span>
+                      <div className="absolute inset-0 bg-accent blur-sm opacity-50" />
+                    </div>
+                  )}
                   
-                  <h3 className="text-sm font-bold tracking-[0.3em] uppercase mb-4 opacity-40 group-hover:opacity-100 group-hover:text-accent transition-all">{t.name}</h3>
-                  <div className="flex items-baseline gap-1 mb-12">
-                    <span className="text-6xl font-black tracking-tighter font-['Space_Grotesk']">
-                      {tier === "enterprise" ? "" : "$"}{t.price}
-                    </span>
-                    {tier !== "enterprise" && <span className="opacity-20 text-sm font-medium ml-2">/mo</span>}
+                  <div className="relative z-10 w-full flex flex-col h-full">
+                    <h3 className="lend-tier-name">{t.name}</h3>
+                    
+                    <div className="lend-price-container">
+                      <div className="flex items-baseline gap-1">
+                        <span className="lend-price-symbol">{tier === "enterprise" ? "" : "$"}</span>
+                        <span className={`lend-price-amount ${tier === "enterprise" ? "is-custom" : ""}`}>{t.price}</span>
+                        {tier !== "enterprise" && <span className="lend-price-period">/mo</span>}
+                      </div>
+                    </div>
+
+                    <div className="h-px w-full bg-white/5 my-8 group-hover:bg-accent/20 transition-colors" />
+
+                    <ul className="lend-features-list">
+                      {t.features.map((f: string) => (
+                        <li key={f} className="lend-feature-item">
+                          <svg className="lend-feature-icon" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <Link 
+                      className={`lend-pricing-button ${isPro ? 'is-pro' : ''} mt-auto`}
+                      href={`/${language}/${tier === "merchant" ? "merchant" : tier === "developer" ? "dev" : tier}`}
+                    >
+                      <span>{t.cta}</span>
+                      <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
+                    </Link>
                   </div>
-
-                  <ul className="space-y-6 mb-16 flex-grow !text-left !items-start !m-0 !p-0">
-                    {t.features.map((f: string) => (
-                      <li key={f} className="text-sm font-medium flex items-center gap-3 opacity-40 group-hover:opacity-100 transition-opacity">
-                        <div className="w-1.5 h-1.5 rounded-full bg-accent/60" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-
-                  <Link 
-                    className="lend-primary w-full py-6 text-sm font-bold tracking-[0.2em] uppercase rounded-2xl" 
-                    href={`/${language}/${tier === "merchant" ? "merchant" : tier === "developer" ? "dev" : tier}`}
-                  >
-                    {t.cta}
-                  </Link>
                 </div>
               );
             })}
@@ -397,28 +445,62 @@ export default function Page(props: { params: Promise<{ locale: string }> }) {
             <h2 className="text-4xl md:text-6xl font-bold tracking-tight">{copy.faq.title}</h2>
           </div>
 
-          <div className="lend-reveal--2 space-y-4">
-            {copy.faq.items.map((item, index) => {
-              const isOpen = index === openFaq;
-              return (
-                <div key={item.question} className={`lend-faq-item ${isOpen ? 'is-open' : ''} group transition-all duration-500`}>
-                  <button
-                    onClick={() => setOpenFaq(isOpen ? -1 : index)}
-                    className="w-full flex justify-between items-center p-10 text-left group"
+          <div className="lend-reveal--2 max-w-4xl mx-auto">
+            <div className="grid gap-6">
+              {copy.faq.items.map((item, index) => {
+                const isOpen = index === openFaq;
+                return (
+                  <div
+                    key={item.question}
+                    className={`
+                      relative group transition-all duration-700 rounded-[2rem] overflow-hidden
+                      ${isOpen 
+                        ? 'bg-white/[0.03] border-white/10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)]' 
+                        : 'bg-transparent border-white/[0.03] hover:bg-white/[0.01] hover:border-white/10'
+                      }
+                      border
+                    `}
                   >
-                    <span className={`font-bold text-xl md:text-2xl transition-colors pr-8 font-['Space_Grotesk'] ${isOpen ? "text-accent" : "text-white/80 group-hover:text-white"}`}>{item.question}</span>
-                    <div className={`w-12 h-12 rounded-full border border-white/10 flex items-center justify-center transition-all duration-500 flex-shrink-0 ${isOpen ? "rotate-45 bg-accent border-accent text-black shadow-[0_0_20px_rgba(139,92,246,0.5)]" : "text-white/40 group-hover:border-white/20"}`}>
-                      <span className="text-3xl leading-none font-light">+</span>
+                    {/* Animated background glow for open item */}
+                    <div className={`absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-transparent opacity-0 transition-opacity duration-700 ${isOpen ? 'opacity-100' : ''}`} />
+                    
+                    <button
+                      onClick={() => setOpenFaq(isOpen ? -1 : index)}
+                      className="relative z-10 w-full flex justify-between items-center p-8 md:p-12 text-left group"
+                    >
+                      <div className="flex flex-col gap-2">
+                        <span className={`text-[0.65rem] font-black uppercase tracking-[0.2em] transition-all duration-500 ${isOpen ? 'text-accent opacity-100 translate-x-0' : 'text-white/20 opacity-0 -translate-x-4'}`}>
+                          Protocol Detail 0{index + 1}
+                        </span>
+                        <span className={`font-bold text-xl md:text-3xl transition-all duration-500 font-['Space_Grotesk'] tracking-tight ${isOpen ? "text-white" : "text-white/60 group-hover:text-white"}`}>
+                          {item.question}
+                        </span>
+                      </div>
+                      
+                      <div className={`
+                        relative w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-700 flex-shrink-0
+                        ${isOpen 
+                          ? "bg-accent text-black rotate-[135deg] shadow-[0_0_30px_rgba(139,92,246,0.4)]" 
+                          : "bg-white/[0.03] text-white/40 group-hover:bg-white/10 group-hover:text-white"
+                        }
+                      `}>
+                        <div className={`absolute w-6 h-[2px] bg-currentColor transition-transform duration-500 ${isOpen ? 'bg-black' : 'bg-white/40 group-hover:bg-white'}`} />
+                        <div className={`absolute w-6 h-[2px] bg-currentColor transition-transform duration-500 rotate-90 ${isOpen ? 'bg-black' : 'bg-white/40 group-hover:bg-white'}`} />
+                      </div>
+                    </button>
+                    
+                    <div className={`relative z-10 overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.2,1,0.3,1)] ${isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}>
+                      <div className="px-8 md:px-12 pb-12">
+                        <div className="w-12 h-1 bg-accent/30 rounded-full mb-8" />
+                        <p className="text-lg md:text-2xl text-white/50 leading-relaxed font-medium font-['Space_Grotesk'] tracking-tight">
+                          {item.answer}
+                        </p>
+                      </div>
                     </div>
-                  </button>
-                  <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}>
-                    <p className="px-10 pb-12 opacity-50 leading-relaxed text-lg md:text-xl max-w-4xl">
-                      {item.answer}
-                    </p>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>

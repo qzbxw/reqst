@@ -279,7 +279,7 @@ export function LandingPage() {
                     onClick={() => setOpenFaq(isOpen ? -1 : index)}
                   >
                     <div className="lend-faq-trigger-copy">
-                      <span className="lend-faq-kicker">Protocol Q&A</span>
+                      <span className="lend-faq-kicker">Protocol Detail 0{index + 1}</span>
                       <span className="lend-faq-question-text">{item.question}</span>
                     </div>
                     <div className="lend-faq-icon">

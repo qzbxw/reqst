@@ -2598,7 +2598,7 @@ code {
 }
 
 .checkout-card, .console-link-card, .metric-card, .payment-field {
-  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+  transition: transform 0.4s ease-in-out, box-shadow 0.4s ease-in-out, border-color 0.4s ease-in-out, background 0.4s ease-in-out;
 }
 
 .checkout-card:hover, .console-link-card:hover {
@@ -4725,7 +4725,7 @@ html {
   font-size: clamp(3rem, 7.4vw, 5.4rem);
   line-height: 0.95;
   letter-spacing: -0.1em;
-  max-width: 9.5ch;
+  max-width: 18ch;
 }
 
 .lend-hero-copy p,
@@ -6391,10 +6391,10 @@ html {
 }
 
 .lend-faq-item {
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.012);
-  transition: all 0.4s cubic-bezier(0.2, 0, 0, 1);
+  border-radius: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.01);
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
   position: relative;
 }
@@ -6402,13 +6402,29 @@ html {
 .lend-faq-item:hover {
   background: rgba(255, 255, 255, 0.02);
   border-color: rgba(255, 255, 255, 0.1);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
 }
 
 .lend-faq-item.is-open {
   background: rgba(255, 255, 255, 0.025);
   border-color: rgba(139, 92, 246, 0.2);
-  box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.4);
+  box-shadow: 
+    0 32px 64px -16px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(139, 92, 246, 0.1);
+}
+
+.lend-faq-item::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top left, rgba(139, 92, 246, 0.1), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+
+.lend-faq-item.is-open::before {
+  opacity: 1;
 }
 
 .lend-faq-trigger {
@@ -6417,21 +6433,23 @@ html {
   align-items: center;
   justify-content: space-between;
   gap: 2rem;
-  padding: 1.6rem 2rem;
+  padding: 2.5rem 3rem;
   background: transparent;
   border: 0;
   cursor: pointer;
   text-align: left;
-  transition: padding 0.4s ease;
+  transition: all 0.4s ease;
+  position: relative;
+  z-index: 1;
 }
 
 .lend-faq-item.is-open .lend-faq-trigger {
-  padding-bottom: 1.2rem;
+  padding-bottom: 1.5rem;
 }
 
 .lend-faq-trigger-copy {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.5rem;
 }
 
 .lend-faq-kicker {
@@ -6439,19 +6457,35 @@ html {
   width: fit-content;
   color: var(--accent);
   font-size: 0.65rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
+  font-weight: 900;
+  letter-spacing: 0.25em;
   text-transform: uppercase;
-  opacity: 0.7;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lend-faq-item.is-open .lend-faq-kicker {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .lend-faq-question-text {
   font-family: "Space Grotesk", sans-serif;
-  font-size: 1.25rem;
-  line-height: 1.25;
-  color: #fff;
-  letter-spacing: -0.02em;
+  font-size: 1.75rem;
+  line-height: 1.1;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: -0.03em;
   font-weight: 700;
+  transition: color 0.4s ease;
+}
+
+.lend-faq-item:hover .lend-faq-question-text {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.lend-faq-item.is-open .lend-faq-question-text {
+  color: #fff;
 }
 
 .lend-faq-answer-wrapper {
@@ -6459,9 +6493,11 @@ html {
   grid-template-rows: 0fr;
   opacity: 0;
   visibility: hidden;
-  transition: grid-template-rows 0.4s cubic-bezier(0.2, 0, 0, 1), 
-              opacity 0.3s ease, 
-              visibility 0.3s ease;
+  transition: grid-template-rows 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.4s ease,
+              visibility 0.4s ease;
+  position: relative;
+  z-index: 1;
 }
 
 .lend-faq-answer-wrapper.is-open {
@@ -6473,69 +6509,68 @@ html {
 .lend-faq-answer {
   min-height: 0;
   overflow: hidden;
-  padding: 0 2rem 1.8rem;
+  padding: 0 3rem 3rem;
+}
+
+.lend-faq-answer::before {
+  content: "";
+  display: block;
+  width: 3rem;
+  height: 2px;
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 1px;
+  margin-bottom: 2rem;
 }
 
 .lend-faq-answer p {
   margin: 0;
-  color: #8c96a1;
-  line-height: 1.6;
-  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.5;
+  font-size: 1.4rem;
   font-weight: 500;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
-  padding-top: 1.2rem;
+  font-family: "Space Grotesk", sans-serif;
+  letter-spacing: -0.02em;
   transition: color 0.4s ease;
 }
 
 .lend-faq-item.is-open .lend-faq-answer p {
-  color: #afbac4;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .lend-faq-icon {
   position: relative;
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 3.5rem;
+  height: 3.5rem;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 1rem;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.lend-faq-icon::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.4s ease;
+.lend-faq-item:hover .lend-faq-icon {
+  background: rgba(255, 255, 255, 0.08);
 }
 
-.lend-faq-item:hover .lend-faq-icon::before {
-  border-color: rgba(139, 92, 246, 0.3);
-  background: rgba(139, 92, 246, 0.05);
+.lend-faq-item.is-open .lend-faq-icon {
+  background: var(--accent);
+  color: #000;
+  transform: rotate(135deg);
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.4);
 }
 
 .lend-faq-icon-line {
   position: absolute;
-  width: 0.6rem;
-  height: 1.5px;
-  background: #fff;
-  transition: all 0.4s cubic-bezier(0.2, 0, 0, 1);
+  width: 1.4rem;
+  height: 2px;
+  background: currentColor;
+  transition: all 0.4s ease;
 }
 
 .lend-faq-icon-line:last-child {
   transform: rotate(90deg);
-}
-
-.lend-faq-item.is-open .lend-faq-icon-line:last-child {
-  transform: rotate(0deg);
-  opacity: 0;
-}
-
-.lend-faq-item.is-open .lend-faq-icon::before {
-  background: var(--accent);
-  border-color: var(--accent);
-  transform: scale(1.1);
 }
 
 .lend-faq-item.is-open .lend-faq-icon-line {

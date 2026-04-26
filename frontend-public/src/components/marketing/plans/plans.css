@@ -1,0 +1,287 @@
+/* Tariff Pages Specific Styles and Animations - Dark Mode / Premium / High-Tech Focus */
+
+/* Global Tariff Base */
+.lend-plan-feature-card, .lend-stat-card, .lend-flow-card, .lend-card {
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(15, 10, 25, 0.95);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.lend-plan-feature-card p, .lend-stat-card p, .lend-flow-card p, .lend-card p {
+  flex-grow: 1;
+}
+
+/* Base Hover Effects - Replaces simple breathing */
+.lend-plan-feature-card:hover, .lend-stat-card:hover, .lend-flow-card:hover, .lend-faq-grid .lend-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 15px 35px -5px rgba(139, 92, 246, 0.15), 0 0 20px rgba(139, 92, 246, 0.1);
+  background: rgba(25, 15, 40, 0.85);
+  z-index: 10;
+}
+
+/* Header Text Standardization - Purple, White, Black */
+.lend-merchant-hero h1, .lend-dev-hero h1, .lend-biz-hero h1, .lend-ent-hero h1 {
+  background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 40%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none; /* Removing blur */
+}
+
+/* Fix Webkit/Safari Blur on Gradient Text and DIVs due to will-change */
+.lend-reveal--1, 
+.lend-reveal--2, 
+.lend-reveal--3, 
+.lend-reveal--4, 
+.lend-reveal--5, 
+.lend-reveal--6, 
+.lend-reveal--7, 
+.lend-reveal--8 {
+  will-change: auto !important;
+}
+
+.lend-merchant-hero h1, .lend-dev-hero h1, .lend-biz-hero h1, .lend-ent-hero h1 {
+  -webkit-transform: translateZ(0);
+}
+
+.lend-stat-label {
+  color: #a78bfa;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+.lend-stat-value {
+  color: #ffffff;
+  font-size: 1.5rem;
+}
+
+/* Specific Plan Accents (Subtle variations within the Purple/White/Black theme) */
+
+/* Merchant Plan */
+.lend-merchant-features .lend-stat-card {
+  border-left: 3px solid rgba(139, 92, 246, 0.4);
+}
+.lend-merchant-features .lend-stat-card:hover {
+  border-left-width: 6px;
+  border-color: #a78bfa;
+}
+
+/* Developer Plan */
+.lend-code-block pre {
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: #050505;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.4s ease;
+}
+.lend-code-block pre:hover {
+  border-color: #a78bfa;
+  box-shadow: inset 0 0 20px rgba(139, 92, 246, 0.1);
+}
+.lend-code-block pre::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.15), transparent);
+  transition: left 0.5s ease;
+}
+.lend-code-block pre:hover::after {
+  animation: scanline 2s linear infinite;
+}
+
+/* Business Plan */
+.lend-biz-features .lend-stat-card {
+  border-bottom: 3px solid rgba(139, 92, 246, 0.3);
+}
+.lend-biz-features .lend-stat-card:hover {
+  border-bottom-width: 6px;
+  border-color: #c4b5fd;
+}
+
+/* Enterprise Plan - Maximum Premium Feel */
+.lend-ent-hero {
+  position: relative;
+}
+.lend-ent-hero::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%; right: -50%; bottom: -50%;
+  background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  animation: fadeInOut 6s ease-in-out infinite alternate;
+}
+
+.lend-ent-hero h1 {
+  background: linear-gradient(to right, #ffffff, #e9d5ff, #8b5cf6, #ffffff);
+  background-size: 200% auto;
+  animation: shine 5s linear infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none; /* Removing blur */
+}
+
+.lend-ent-features .lend-stat-card {
+  background: linear-gradient(145deg, rgba(20, 15, 30, 0.9), rgba(10, 5, 15, 0.95));
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+.lend-ent-features .lend-stat-card:hover {
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.3), inset 0 0 20px rgba(139, 92, 246, 0.15);
+  border-color: #a78bfa;
+}
+
+/* Advanced Animations */
+@keyframes scanline {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+
+@keyframes shine {
+  to { background-position: 200% center; }
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0.2; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1.1); }
+}
+
+/* Base structural overrides */
+.lend-ideal-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 1.5rem;
+}
+.lend-ideal-list li {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  color: #e2e8f0;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+.lend-ideal-list li:hover {
+  background: rgba(139, 92, 246, 0.05);
+  border-color: rgba(139, 92, 246, 0.3);
+  transform: translateX(10px);
+  color: #ffffff;
+  box-shadow: -5px 0 15px rgba(139, 92, 246, 0.1);
+}
+.lend-check-icon {
+  color: #a78bfa;
+  font-weight: bold;
+  font-size: 1.2rem;
+  text-shadow: 0 0 10px rgba(167, 139, 250, 0.5);
+}
+
+.lend-faq-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+@media (min-width: 768px) {
+  .lend-faq-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.lend-faq-grid .lend-card {
+  padding: 1.5rem;
+}
+.lend-faq-grid .lend-card dt h3 {
+  margin-bottom: 0.75rem;
+  font-size: 1.15rem;
+  color: #f8fafc;
+  line-height: 1.4;
+  transition: color 0.3s ease;
+}
+.lend-faq-grid .lend-card:hover dt h3 {
+  color: #c4b5fd;
+}
+.lend-faq-grid .lend-card dd p {
+  color: #cbd5e1;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Technical Specs Grid */
+.lend-specs-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+@media (min-width: 768px) {
+  .lend-specs-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.lend-spec-item {
+  padding: 1rem;
+  background: rgba(15, 10, 25, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+.lend-spec-item:hover {
+  border-color: rgba(139, 92, 246, 0.4);
+  background: rgba(20, 15, 30, 0.6);
+  transform: translateY(-2px);
+}
+.lend-spec-item dt {
+  font-size: 0.85rem;
+  color: #a78bfa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+.lend-spec-item dd {
+  font-size: 1.05rem;
+  color: #ffffff;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Security Section */
+.lend-security-body {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: #cbd5e1;
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(to right, rgba(139, 92, 246, 0.05), transparent);
+  border-left: 4px solid #8b5cf6;
+  border-radius: 0 8px 8px 0;
+}
+
+/* CTA Buttons standardization */
+.lend-price-btn, .lend-primary {
+  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+  transition: all 0.3s ease;
+  color: white;
+}
+.lend-price-btn:hover, .lend-primary:hover {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5);
+  transform: translateY(-2px);
+  color: white;
+}
