@@ -5,7 +5,8 @@ ARG VITE_API_BASE_URL=
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
 COPY frontend/package.json frontend/package-lock.json* ./
-RUN npm install
+RUN --mount=type=cache,target=/root/.npm \
+    npm install
 
 COPY frontend /app
 RUN npm run build

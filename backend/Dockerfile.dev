@@ -5,6 +5,7 @@ WORKDIR /app/backend
 RUN apk add --no-cache git
 
 COPY backend/go.mod backend/go.sum* ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 
 CMD ["go", "run", "./cmd/api"]

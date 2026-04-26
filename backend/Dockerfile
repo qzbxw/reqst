@@ -3,13 +3,17 @@ FROM golang:1.24-alpine AS build
 WORKDIR /app
 COPY backend/go.mod backend/go.sum* ./backend/
 WORKDIR /app/backend
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 
 COPY backend /app/backend
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /out/api ./cmd/api
-RUN CGO_ENABLED=0 GOOS=linux go build -o /out/blockchain_watcher ./cmd/blockchain_watcher
-RUN CGO_ENABLED=0 GOOS=linux go build -o /out/telegram_bot_worker ./cmd/telegram_bot_worker
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux go build -o /out/api ./cmd/api
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux go build -o /out/blockchain_watcher ./cmd/blockchain_watcher
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux go build -o /out/telegram_bot_worker ./cmd/telegram_bot_worker
 
 FROM alpine:3.21
 
