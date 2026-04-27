@@ -75,7 +75,37 @@ const en = {
     networks: {
       kicker: "NETWORKS",
       title: "Global Connectivity.",
-      list: ["TON", "TRON", "SOLANA", "BASE", "ARBITRUM", "BSC", "ETHEREUM"]
+      list: ["TON", "TRON", "SOLANA", "BASE", "ARBITRUM", "BSC", "ETHEREUM"],
+      rails: [
+        {
+          name: "TON",
+          body: "The native choice for Telegram-based commerce and the growing TON ecosystem.",
+        },
+        {
+          name: "TRON",
+          body: "The global standard for USDT settlement with high throughput and low costs.",
+        },
+        {
+          name: "SOL",
+          body: "Fast, confirmation-aware monitoring for businesses that need predictable payment operations.",
+        },
+        {
+          name: "EVM",
+          body: "Base, Arbitrum, BSC — support the EVM networks available in the current checkout flow.",
+        },
+        {
+          name: "BASE",
+          body: "Optimistic L2 by Coinbase, offering low fees and Ethereum security.",
+        },
+        {
+          name: "BSC",
+          body: "High-performance network with one of the largest ecosystem of active users.",
+        },
+        {
+          name: "ARBITRUM",
+          body: "The leading layer-2 for Ethereum, providing professional-grade scalability.",
+        }
+      ]
     },
     compare: {
       kicker: "EVOLUTION",

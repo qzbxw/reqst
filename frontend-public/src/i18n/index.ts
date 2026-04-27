@@ -18,7 +18,7 @@ export function getCopy(locale: string | undefined): PublicCopy {
 }
 export const PUBLIC_PLAN_COPY = { en: en.plan, ru: ru.plan } as const;
 export const PUBLIC_MARKETING_COPY = { 
-  en: { ...en.marketing, final: en.final, nav: en.nav }, 
-  ru: { ...ru.marketing, final: ru.final, nav: ru.nav } 
+  en: { ...en.marketing, final: en.final, nav: en.nav, networks: en.networks }, 
+  ru: { ...ru.marketing, final: ru.final, nav: ru.nav, networks: ru.networks } 
 } as const;
 export const PUBLIC_LEGAL_COPY = { privacy: { en: en.legal.privacy, ru: ru.legal.privacy }, terms: { en: en.legal.terms, ru: ru.legal.terms } } as const;
