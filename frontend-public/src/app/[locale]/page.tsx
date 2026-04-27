@@ -378,8 +378,8 @@ export default function Page(props: { params: Promise<{ locale: string }> }) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lend-reveal--2">
-            {["merchant", "developer", "business", "enterprise"].map((tier) => {
-              const t = copy.pricing[tier as keyof typeof copy.pricing];
+            {(["merchant", "developer", "business", "enterprise"] as const).map((tier) => {
+              const t = copy.pricing[tier];
               const isPro = tier === "business" || tier === "enterprise";
               const isPopular = tier === "business";
               

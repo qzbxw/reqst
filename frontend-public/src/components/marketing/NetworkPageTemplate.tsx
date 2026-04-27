@@ -34,7 +34,7 @@ export function NetworkPageTemplate({
       <section className="lend-hero lend-hero--centered" ref={reveal}>
         <div className="lend-hero-copy">
           <span className="lend-section-kicker lend-reveal--1">
-            {copy.networks}
+            {copy.networks.kicker}
           </span>
           <h1 className="lend-reveal--2">{network.fullName}</h1>
           <p className="lend-reveal--3">{network.description}</p>

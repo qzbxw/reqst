@@ -128,6 +128,7 @@ const ru = {
     pricing: {
       kicker: "ДОСТУП",
       title: "Прозрачные цены. Без комиссий.",
+      popular: "Популярный",
       merchant: {
         name: "Merchant",
         price: "39",

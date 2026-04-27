@@ -128,6 +128,7 @@ const en = {
     pricing: {
       kicker: "ACCESS",
       title: "Transparent pricing. No fees.",
+      popular: "Popular",
       merchant: {
         name: "Merchant",
         price: "39",
