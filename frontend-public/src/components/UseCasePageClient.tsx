@@ -15,10 +15,94 @@ import {
 import { MarketingLayout, useReveal } from "./marketing/MarketingLayout";
 import { useUI } from "./UIProvider";
 import { JsonLd } from "./JsonLd";
-import { getCopy, Locale } from "@/i18n";
+import { Locale } from "@/i18n";
 import "./marketing/plans/plans.css";
 
-type UseCaseCopy = ReturnType<typeof getCopy>["marketing"]["useCasePages"]["telegram-shops"];
+type LinkCopy = {
+  readonly kicker: string;
+  readonly label: string;
+  readonly body: string;
+  readonly href: string;
+};
+
+type UseCaseCopy = {
+  readonly name: string;
+  readonly metadata: {
+    readonly title: string;
+    readonly description: string;
+  };
+  readonly kicker: string;
+  readonly hero: {
+    readonly title: string;
+    readonly body: string;
+  };
+  readonly problem: {
+    readonly kicker: string;
+    readonly title: string;
+    readonly body: string;
+  };
+  readonly solution: {
+    readonly kicker: string;
+    readonly title: string;
+    readonly body: string;
+  };
+  readonly productPlan: {
+    readonly kicker: string;
+    readonly title: string;
+    readonly body: string;
+    readonly product: {
+      readonly label: string;
+      readonly title: string;
+      readonly body: string;
+      readonly href: string;
+      readonly linkLabel: string;
+    };
+    readonly plan: {
+      readonly label: string;
+      readonly title: string;
+      readonly body: string;
+      readonly href: string;
+      readonly linkLabel: string;
+    };
+  };
+  readonly networks: {
+    readonly kicker: string;
+    readonly title: string;
+    readonly body: string;
+    readonly items: readonly {
+      readonly name: string;
+      readonly body: string;
+    }[];
+  };
+  readonly flow: {
+    readonly kicker: string;
+    readonly title: string;
+    readonly steps: readonly {
+      readonly title: string;
+      readonly body: string;
+    }[];
+  };
+  readonly related: {
+    readonly kicker: string;
+    readonly title: string;
+    readonly links: readonly LinkCopy[];
+  };
+  readonly cta: {
+    readonly title: string;
+    readonly body: string;
+    readonly primary: {
+      readonly label: string;
+      readonly href: string;
+    };
+    readonly secondary: {
+      readonly label: string;
+      readonly href: string;
+    };
+  };
+  readonly features: readonly string[];
+  readonly seoLabel: string;
+  readonly seo: string;
+};
 
 type Props = {
   usecase: string;
@@ -45,7 +129,7 @@ export function UseCasePageClient({ usecase, locale, copy }: Props) {
     applicationCategory: "PaymentApplication",
     operatingSystem: "Web",
     description: copy.metadata.description,
-    featureList: (copy as any).features || [],
+    featureList: copy.features,
     aggregateRating: {
       "@type": "AggregateRating",
       ratingValue: "4.9",
